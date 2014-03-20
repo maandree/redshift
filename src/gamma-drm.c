@@ -81,7 +81,7 @@ drm_start(drm_state_t *state)
 		return -1;
 	}
 
-	/* Create entires for selected CRTCs. */
+	/* Create entries for selected CRTCs. */
 	int crtc_count = state->res->count_crtcs;
 	if (state->crtc_num >= 0) {
 		if (state->crtc_num >= crtc_count) {
@@ -93,11 +93,11 @@ drm_start(drm_state_t *state)
 			} else {
 				fprintf(stderr, _("Only CRTC 0 exists.\n"));
 			}
-			fprintf(stderr, "Invalid CRTC\n");
 			close(state->fd);
 			state->fd = -1;
 			drmModeFreeResources(state->res);
 			state->res = NULL;
+			return -1;
 		}
 
 		state->crtcs = malloc(2 * sizeof(drm_crtc_state_t));
@@ -139,11 +139,16 @@ drm_start(drm_state_t *state)
 		crtcs->g_gamma = crtcs->r_gamma + crtcs->gamma_size;
 		crtcs->b_gamma = crtcs->g_gamma + crtcs->gamma_size;
 		if (crtcs->r_gamma != NULL) {
-			if (drmModeCrtcGetGamma(state->fd, crtcs->crtc_id, crtcs->gamma_size,
-						crtcs->r_gamma, crtcs->g_gamma, crtcs->b_gamma))
+			int r = drmModeCrtcGetGamma(state->fd, crtcs->crtc_id, crtcs->gamma_size,
+						    crtcs->r_gamma, crtcs->g_gamma, crtcs->b_gamma);
+			if (r < 0) {
+				fprintf(stderr, _("DRM could not read gamma ramps on CRTC %i on\n"
+						  "graphics card %i, ignoring device.\n"),
+					crtcs->crtc_num, state->card_num);
+				free(crtcs->r_gamma);
 				crtcs->r_gamma = NULL;
-		}
-		if (crtcs->r_gamma == NULL) {
+			}
+		} else if (crtcs->r_gamma == NULL) {
 			perror("malloc");
 			drmModeFreeResources(state->res);
 			state->res = NULL;
