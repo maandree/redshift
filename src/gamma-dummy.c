@@ -95,10 +95,11 @@ gamma_dummy_set_option(void *state, const char *key, const char *value, int sect
 }
 
 int
-gamma_dummy_set_temperature(void *state, int temp, float brightness)
+gamma_dummy_set_temperature(void *state, int temp, float brightness, int calibrations)
 {
 	(void) state;
 	(void) brightness;
+	(void) calibrations;
 	printf(_("Temperature: %i\n"), temp);
 	return 0;
 }
