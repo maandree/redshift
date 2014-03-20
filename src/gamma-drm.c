@@ -148,7 +148,7 @@ drm_start(drm_state_t *state)
 				free(crtcs->r_gamma);
 				crtcs->r_gamma = NULL;
 			}
-		} else if (crtcs->r_gamma == NULL) {
+		} else {
 			perror("malloc");
 			drmModeFreeResources(state->res);
 			state->res = NULL;
