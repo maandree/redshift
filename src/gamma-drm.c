@@ -314,6 +314,7 @@ drm_free(drm_state_t *state)
 				if (crtcs[crtc_index].gamma_r != NULL)
 					free(crtcs[crtc_index].gamma_r);
 			}
+
 			free(card->crtcs);
 			card->crtcs = NULL;
 		}
