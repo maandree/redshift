@@ -125,7 +125,7 @@ drm_start(drm_state_t *state)
 
 	/* Load CRTC information and gamma ramps. */
 	drm_crtc_state_t *crtcs = state->crtcs;
-	while (crtcs->crtc_num >= 0) {
+	for (; crtcs->crtc_num >= 0; crtcs++) {
 		crtcs->crtc_id = state->res->crtcs[crtcs->crtc_num];
 		drmModeCrtc* crtc_info = drmModeGetCrtc(state->fd, crtcs->crtc_id);
 		if (crtc_info == NULL) {
@@ -134,6 +134,12 @@ drm_start(drm_state_t *state)
 		}
 		crtcs->gamma_size = crtc_info->gamma_size;
 		drmModeFreeCrtc(crtc_info);
+		if (crtcs->gamma_size <= 1) {
+			fprintf(stderr, _("Could not get gamma ramp size for CRTC %i\n"
+					  "on graphics card %i, ignoring device.\n"),
+				crtcs->crtc_num, state->card_num);
+			continue;
+		}
 		/* Valgrind complains about us reading uninitialize memory if we just use malloc. */
 		crtcs->r_gamma = calloc(3 * crtcs->gamma_size, sizeof(uint16_t));
 		crtcs->g_gamma = crtcs->r_gamma + crtcs->gamma_size;
@@ -160,7 +166,6 @@ drm_start(drm_state_t *state)
 			state->crtcs = NULL;
 			return -1;
 		}
-		crtcs++;
 	}
 
 	return 0;
