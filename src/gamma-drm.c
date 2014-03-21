@@ -429,6 +429,13 @@ drm_set_temperature(drm_state_t *state, int temp, float brightness)
 				       crtc->gamma_size, temp, brightness, crtc->gamma);
 			drmModeCrtcSetGamma(card->fd, crtc->crtc_id, crtc->gamma_size,
 					    crtc->gamma_r, crtc->gamma_g, crtc->gamma_b);
+
+			/* If Direct Rendering Manager is used to change the gamma ramps
+			   while an graphical session is active in the foreground (and X
+			   display is running on the active VT) Direct Rendering Manager
+			   will ignore the request and report that you do not have
+			   sufficient permissions. This rejection is ignored so nothing
+			   funny happens if the users opens a VT with a graphical session. */
 		}
 	}
 
