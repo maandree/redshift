@@ -59,7 +59,7 @@ drm_init(drm_state_t *state)
 	if (in_a_dislay) {
 		fprintf(stderr, _("You appear to be inside a graphical environment\n"
 				  "adjustments made using the DRM method will only\n"
-				  "be applied when in a TTY."));
+				  "be applied when in a TTY.\n"));
 	}
 
 	/* Count number of graphics cards. */
