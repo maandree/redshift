@@ -237,7 +237,8 @@ drm_start(drm_state_t *state)
 		drmModeFreeCrtc(crtc_info);
 		if (crtc->gamma_size <= 1) {
 			fprintf(stderr,
-				_("DRM failed to use gamma ramps for CRTC %i on card %i.\n"),
+				_("DRM failed to use gamma ramps for CRTC %i\n"
+				  "on graphics card %i, ignoring device.\n"),
 				selection->card_num, crtc->crtc_num);
 			continue;
 		}

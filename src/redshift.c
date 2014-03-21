@@ -99,7 +99,7 @@ typedef union {
 static const gamma_method_t gamma_methods[] = {
 #ifdef ENABLE_DRM
 	{
-		"drm", 1,
+		"drm", 0,
 		(gamma_method_init_func *)drm_init,
 		(gamma_method_start_func *)drm_start,
 		(gamma_method_free_func *)drm_free,
