@@ -244,7 +244,7 @@ drm_set_temperature(drm_state_t *state, int temp, float brightness, const float 
 	uint16_t *g_gamma = NULL;
 	uint16_t *b_gamma = NULL;
 
-	while (crtcs->crtc_num >= 0) {
+	for (; crtcs->crtc_num >= 0; crtcs++) {
 		if (crtcs->gamma_size <= 1)
 			continue;
 		if (crtcs->gamma_size != last_gamma_size) {
@@ -267,7 +267,6 @@ drm_set_temperature(drm_state_t *state, int temp, float brightness, const float 
 			       temp, brightness, gamma);
 		drmModeCrtcSetGamma(state->fd, crtcs->crtc_id, crtcs->gamma_size,
 				    r_gamma, g_gamma, b_gamma);
-		crtcs++;
 	}
 
 	free(r_gamma);
