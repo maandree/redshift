@@ -57,6 +57,17 @@ typedef struct {
 	drm_selection_t *selections;
 	int card_count;
 	drm_card_state_t *cards;
+	uint16_t* r_gamma;
+	uint16_t* g_gamma;
+	uint16_t* b_gamma;
+} drm_crtc_state_t;
+
+typedef struct {
+	int card_num;
+	int crtc_num;
+	int fd;
+	drmModeRes* res;
+	drm_crtc_state_t* crtcs;
 } drm_state_t;
 
 
