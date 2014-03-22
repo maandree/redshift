@@ -59,7 +59,7 @@ drm_init(drm_state_t *state)
 	if (in_a_dislay) {
 		fprintf(stderr, _("You appear to be inside a graphical environment\n"
 				  "adjustments made using the DRM method will only\n"
-				  "be applied when in a TTY."));
+				  "be applied when in a TTY.\n"));
 	}
 
 	/* Count number of graphics cards. */
@@ -237,7 +237,8 @@ drm_start(drm_state_t *state)
 		drmModeFreeCrtc(crtc_info);
 		if (crtc->gamma_size <= 1) {
 			fprintf(stderr,
-				_("DRM failed to use gamma ramps for CRTC %i on card %i.\n"),
+				_("DRM failed to use gamma ramps for CRTC %i\n"
+				  "on graphics card %i, ignoring device.\n"),
 				selection->card_num, crtc->crtc_num);
 			continue;
 		}
@@ -434,6 +435,13 @@ drm_set_temperature(drm_state_t *state, int temp, float brightness, int calibrat
 				       saved_gamma_r, saved_gamma_g, saved_gamma_b);
 			drmModeCrtcSetGamma(card->fd, crtc->crtc_id, crtc->gamma_size,
 					    crtc->gamma_r, crtc->gamma_g, crtc->gamma_b);
+
+			/* If Direct Rendering Manager is used to change the gamma ramps
+			   while an graphical session is active in the foreground (and X
+			   display is running on the active VT) Direct Rendering Manager
+			   will ignore the request and report that you do not have
+			   sufficient permissions. This rejection is ignored so nothing
+			   funny happens if the users opens a VT with a graphical session. */
 		}
 	}
 
