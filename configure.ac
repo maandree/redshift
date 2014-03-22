@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
-AC_INIT([redshift], [1.8], [https://bugs.launchpad.net/redshift])
+AC_INIT([redshift], [1.8], [https://github.com/jonls/redshift/issues])
 AC_CONFIG_SRCDIR([src/redshift.c])
 AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE([foreign subdir-objects dist-xz])
@@ -186,6 +186,25 @@ AS_IF([test "x$enable_ubuntu" != xno], [
 ])
 AM_CONDITIONAL([ENABLE_UBUNTU], [test "x$enable_ubuntu" != xno])
 
+
+# Check for systemd
+PKG_PROG_PKG_CONFIG
+AC_MSG_CHECKING([Directory to install systemd user unit files])
+AC_ARG_WITH([systemduserunitdir],
+            [AS_HELP_STRING([--with-systemduserunitdir=<dir>],
+                            [Directory for systemd user unit files])],
+            [], [with_systemduserunitdir=$($PKG_CONFIG --variable=systemduserunitdir systemd)])
+AS_IF([test -n "$with_systemduserunitdir" -a "x$with_systemduserunitdir" != xno], [
+	AC_SUBST([systemduserunitdir], [$with_systemduserunitdir])
+	AC_MSG_RESULT([$systemduserunitdir])
+	enable_systemd=yes
+], [
+	AC_MSG_RESULT([not enabled])
+	enable_systemd=no
+])
+AM_CONDITIONAL([ENABLE_SYSTEMD], [test "x$enable_systemd" != xno])
+
+
 # Checks for header files.
 AC_CHECK_HEADERS([locale.h stdint.h stdlib.h string.h unistd.h signal.h])
 
@@ -226,4 +245,5 @@ echo "
 
     GUI:		${enable_gui}
     Ubuntu icons:	${enable_ubuntu}
+    systemd units:	${enable_systemd} ${systemduserunitdir}
 "
