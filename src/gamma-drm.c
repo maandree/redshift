@@ -237,9 +237,9 @@ drm_start(drm_state_t *state)
 		drmModeFreeCrtc(crtc_info);
 		if (crtc->gamma_size <= 1) {
 			fprintf(stderr,
-				_("DRM failed to use gamma ramps for CRTC %i\n"
+				_("DRM failed to use gamma ramps on CRTC %i\n"
 				  "on graphics card %i, ignoring device.\n"),
-				selection->card_num, crtc->crtc_num);
+				crtc->crtc_num, selection->card_num);
 			continue;
 		}
 		/* Valgrind complains about us reading uninitialize memory if we just use malloc. */
@@ -256,8 +256,8 @@ drm_start(drm_state_t *state)
 		if (r < 0) {
 			free(crtc->saved_gamma_r);
 			crtc->saved_gamma_r = NULL;
-			fprintf(stderr, _("DRM could not read gamma ramps on CRTC %i on\n"
-					  "graphics card %i, ignoring device.\n"),
+			fprintf(stderr, _("DRM could not read gamma ramps on CRTC %i\n"
+					  "on graphics card %i, ignoring device.\n"),
 				crtc->crtc_num, selection->card_num);
 		}
 
@@ -316,7 +316,6 @@ drm_free(drm_state_t *state)
 				if (crtcs[crtc_index].gamma_r != NULL)
 					free(crtcs[crtc_index].gamma_r);
 			}
-
 			free(card->crtcs);
 			card->crtcs = NULL;
 		}
