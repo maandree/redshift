@@ -330,34 +330,4 @@ colorramp_fill(uint16_t *gamma_r, uint16_t *gamma_g, uint16_t *gamma_b,
 			cfilter[i] = ccalib[y];
 		}
 	}
-
-	/* Apply gamma ramps used when Redshift started on top of
-	   the effects of Redshift. It would be easier to put
-	   Redshift's effects on top if this, but then calibrations
-	   whould become incorrect. */
-	if (calib_r == NULL)
-		return;
-	uint16_t *calib[3];
-	calib[0] = calib_r;
-	calib[1] = calib_g;
-	calib[2] = calib_b;
-	uint16_t *filter[3];
-	filter[0] = gamma_r;
-	filter[1] = gamma_g;
-	filter[2] = gamma_b;
-	int size_ = size - 1;
-	for (int c = 0; c < 3; c++) {
-		uint16_t *cfilter = filter[c];
-		uint16_t *ccalib = calib[c];
-		for (int i = 0; i < size; i++) {
-			/* We a rounding a bit. We could do linear
-			   interpolation or even (precalculated)
-			   polynomial interpolation, but it is
-			   probably not worth it. */
-			int y = cfilter[i];
-			y = (float)(y * size_) / UINT16_MAX + 0.5;
-			y = y < 0 ? 0 : (y > size_ ? size_ : y);
-			cfilter[i] = ccalib[y];
-		}
-	}
 }
