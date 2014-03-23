@@ -219,10 +219,10 @@ class RedshiftStatusIcon(object):
                                self.status_icon, button, time)
 
     def toggle_cb(self, widget, data=None):
-        if self.toggle_semaphore.acquire(blocking = False):
+        # Only toggle if a change from current state was requested
+        if self.is_enabled() != widget.get_active():
             self.remove_suspend_timer()
             self.child_toggle_status()
-            self.toggle_semaphore.release()
 
     # Info dialog callbacks
     def show_info_cb(self, widget, data=None):
@@ -250,9 +250,7 @@ class RedshiftStatusIcon(object):
         self._status = status
 
         self.update_status_icon()
-        self.toggle_semaphore.acquire()
         self.toggle_item.set_active(self.is_enabled())
-        self.toggle_semaphore.release()
         self.status_label.set_markup('<b>{}:</b> {}'.format(_('Status'),
                                                             _('Enabled') if status else _('Disabled')))
 

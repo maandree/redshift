@@ -17,8 +17,8 @@
    Copyright (c) 2010  Jon Lund Steffensen <jonlst@gmail.com>
 */
 
-#ifndef _REDSHIFT_CONFIG_INI_H
-#define _REDSHIFT_CONFIG_INI_H
+#ifndef REDSHIFT_CONFIG_INI_H
+#define REDSHIFT_CONFIG_INI_H
 
 typedef struct _config_ini_section config_ini_section_t;
 typedef struct _config_ini_setting config_ini_setting_t;
@@ -49,4 +49,4 @@ config_ini_section_t *config_ini_get_section(config_ini_state_t *state,
 config_ini_section_t **config_ini_get_sections(config_ini_state_t *state,
 					       const char *name);
 
-#endif /* ! _REDSHIFT_CONFIG_INI_H */
+#endif /* ! REDSHIFT_CONFIG_INI_H */
