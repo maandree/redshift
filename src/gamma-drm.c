@@ -244,7 +244,7 @@ drm_start(drm_state_t *state)
 		}
 		/* Valgrind complains about us reading uninitialize memory if we just use malloc. */
 		crtc->saved_gamma_r = calloc(3 * crtc->gamma_size, sizeof(uint16_t));
- 		crtc->saved_gamma_g = crtc->saved_gamma_r + crtc->gamma_size;
+		crtc->saved_gamma_g = crtc->saved_gamma_r + crtc->gamma_size;
 		crtc->saved_gamma_b = crtc->saved_gamma_g + crtc->gamma_size;
 		if (crtc->saved_gamma_r == NULL) {
 			perror("malloc");
@@ -316,7 +316,6 @@ drm_free(drm_state_t *state)
 				if (crtcs[crtc_index].gamma_r != NULL)
 					free(crtcs[crtc_index].gamma_r);
 			}
-
 			free(card->crtcs);
 			card->crtcs = NULL;
 		}
