@@ -43,6 +43,8 @@ typedef void gamma_invalid_partition_func(gamma_site_state_t *site, size_t parti
 
 typedef int gamma_set_ramps_func(gamma_state_state_t *state, gamma_crtc_state_t *crtc, gamma_ramps_t ramps);
 
+typedef int gamma_set_option_func(gamma_state_state_t *state, const char *key, const char *value, int section);
+
 
 
 /* Gamma ramp trio */
@@ -138,8 +140,9 @@ typedef struct {
 	gamma_open_crtc_func *open_crtc;
 	/* Function that inform about invalid selection of partition */
 	gamma_invalid_partition_func *invalid_partition;
-	/*Function that applies a gamma ramp */
+	/* Function that applies a gamma ramp */
 	gamma_set_ramps_func *set_gamma;
+	gamma_set_option_func *set_option;
 } gamma_state_t;
 
 
@@ -184,6 +187,10 @@ void gamma_restore(gamma_state_t *state);
 
 /* Update gamma ramps */
 void gamma_update(gamma_state_t *state);
+
+
+/* Parse and apply an option */
+int gamma_set_option(gamma_state_t *state, const char *key, const char *value, int section);
 
 
 

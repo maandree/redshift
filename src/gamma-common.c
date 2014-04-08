@@ -34,6 +34,7 @@ gamma_init(gamma_state_t *state)
 
 	if (state->selections == NULL) {
 		perror("malloc");
+		state->selections_made = 0;
 		return -1;
 	}
 
@@ -231,7 +232,7 @@ gamma_resolve_selections(gamma_state_t *state)
 			/* Grow array with sites, we temporarily store the new array
 			   a temporarily variable so that we can properly release
 			   resources on error */
-			gamma_site_state_t* new_sites;
+			gamma_site_state_t *new_sites;
 			size_t alloc_size = (site_index + 1) * sizeof(gamma_site_state_t);
 			new_sites = state->sites != NULL ?
 					realloc(state->sites, alloc_size) :
@@ -297,10 +298,10 @@ gamma_resolve_selections(gamma_state_t *state)
 				return -1;
 			}
 
-			/* Grow array with selected CRTC:S, we temporarily store
+			/* Grow array with selected CRTC:s, we temporarily store
 			   the new array a temporarily variable so that we can
 			   properly release resources on error */
-			gamma_crtc_state_t* new_crtcs;
+			gamma_crtc_state_t *new_crtcs;
 			size_t alloc_size = ();
 			alloc_size *= sizeof(gamma_crtc_state_t);
 			new_crtcs = partition->crtcs_used != NULL ?
@@ -313,7 +314,7 @@ gamma_resolve_selections(gamma_state_t *state)
 			partition->crtcs_used = new_crtcs;
 
 			for (size_t c = crtc_start; c < crtc_end; c++) {
-				gamma_crtc_state_t* crtc = partition->crtcs_used;
+				gamma_crtc_state_t *crtc = partition->crtcs_used;
 				size_t total_ramp_size = 0, rrs, grs;
 				uint16_t *ramps;
 
@@ -377,5 +378,72 @@ gamma_update(gamma_state_t *state)
 		colorramp_fill(iter->crtc->current_ramps, iter->crtc->settings);
 		state->set_ramps(state, iter->crtc, iter->crtc->current_ramps);
 	}
+}
+
+
+/* Parse and apply an option */
+int
+gamma_set_option(gamma_state_t *state, const char *key, const char *value, int section)
+{
+	int r;
+
+	if (section == state->selections_made) {
+		/* Grow array with selections, we temporarily store
+		   the new array a temporarily variable so that we can
+		   properly release resources on error */
+		gamma_selection_state_t *new_selections;
+		size_t alloc_size = state->selections_made + 1;
+		alloc_size *= sizeof(gamma_selection_state_t)
+		new_selections = realloc(state->selections, alloc_size);
+		if (new_selections == NULL) {
+			perror("realloc");
+			return -1;
+		}
+		state->selections = new_selections;
+
+		/* Copy default selection */
+		state->selections[section] = *(state->selections);
+
+		/* Increment this last, so we do not get segfault on error */
+		state->selections_made += 1;
+	}
+
+	if (strcasecmp(key, "gamma") == 0) {
+		float gamma[3];
+		if (parse_gamma_string(value, gamma) < 0) {
+			fputs(_("Malformed gamma setting.\n"),
+			      stderr);
+			return -1;
+		}
+#ifdef MAX_GAMMA
+		if (gamma[0] < MIN_GAMMA || gamma[0] > MAX_GAMMA ||
+		    gamma[1] < MIN_GAMMA || gamma[1] > MAX_GAMMA ||
+		    gamma[2] < MIN_GAMMA || gamma[2] > MAX_GAMMA) {
+			fprintf(stderr,
+				_("Gamma value must be between %.1f and %.1f.\n"),
+				MIN_GAMMA, MAX_GAMMA);
+			return -1;
+		}
+#else
+		if (gamma[0] < MIN_GAMMA ||
+		    gamma[1] < MIN_GAMMA ||
+		    gamma[2] < MIN_GAMMA) {
+			fprintf(stderr,
+				_("Gamma value must be atleast %.1f.\n"),
+				MIN_GAMMA);
+			return -1;
+		}
+#endif
+		state->selections[section].settings.gamma[0] = gamma[0];
+		state->selections[section].settings.gamma[1] = gamma[1];
+		state->selections[section].settings.gamma[2] = gamma[2];
+	} else {
+		r = state->set_option(state, key, value, section);
+		if (r <= 0)
+			return r;
+		fprintf(stderr, _("Unknown method parameter: `%s'.\n"), key);
+		return -1;
+	}
+	return 0;
 }
 
