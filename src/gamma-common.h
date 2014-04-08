@@ -41,6 +41,8 @@ typedef int gamma_open_crtc_func(gamma_state_t *state,
 
 typedef void gamma_invalid_partition_func(gamma_site_state_t *site, size_t partition);
 
+typedef int gamma_set_ramps_func(gamma_state_state_t *state, gamma_crtc_state_t *crtc, gamma_ramps_t ramps);
+
 
 
 /* Gamma ramp trio */
@@ -135,7 +137,9 @@ typedef struct {
 	gamma_open_partition_func *open_partition;
 	gamma_open_crtc_func *open_crtc;
 	/* Function that inform about invalid selection of partition */
-	gamma_invalid_partition_func* invalid_partition;
+	gamma_invalid_partition_func *invalid_partition;
+	/*Function that applies a gamma ramp */
+	gamma_set_ramps_func *set_gamma;
 } gamma_state_t;
 
 
@@ -152,10 +156,10 @@ typedef struct {
 
 
 /* Free all CRTC selection data in a state */
-void gamma_common_free_selections(gamma_state_t *state);
+void gamma_free_selections(gamma_state_t *state);
 
 /* Free all data in a state */
-void gamma_common_free(gamma_state_t *state);
+void gamma_free(gamma_state_t *state);
 
 
 /* Create CRTC iterator */
@@ -167,6 +171,13 @@ int gamma_iterator_next(gamma_iterator_t *iterator);
 
 /* Resolve selections */
 int gamma_resolve_selections(gamma_state_t *state);
+
+
+/* Restore gamma ramps */
+void gamma_restore(gamma_state_t *state);
+
+/* Update gamma ramps */
+void gamma_update(gamma_state_t *state);
 
 
 

@@ -21,7 +21,8 @@
 
 
 /* Free all CRTC selection data in a state */
-void gamma_common_free_selections(gamma_state_t *state)
+void
+gamma_free_selections(gamma_state_t *state)
 {
 	size_t i;
 
@@ -39,7 +40,8 @@ void gamma_common_free_selections(gamma_state_t *state)
 }
 
 /* Free all data in a state */
-void gamma_common_free(gamma_state_t *state)
+void
+gamma_free(gamma_state_t *state)
 {
 	size_t s, p, c;
 	gamma_site_state_t *site;
@@ -47,7 +49,7 @@ void gamma_common_free(gamma_state_t *state)
 	gamma_crtc_state_t *crtc;
 
 	/* Free selections */
-	gamma_common_free_selections(state);
+	gamma_free_selections(state);
 
 	/* Free each site */
 	for (s = 0; s < state->sites_used; s++) {
@@ -106,23 +108,33 @@ void gamma_common_free(gamma_state_t *state)
 
 
 /* Create CRTC iterator */
-gamma_iterator_t gamma_iterator(gamma_state_t *state)
+gamma_iterator_t
+gamma_iterator(gamma_state_t *state)
 {
 	gamma_iterator_t iterator = {
 		.crtc      = NULL,
-		.partition = state->sites->partitions,
-		.site      = state->sites,
+		.partition = NULL,
+		.site      = NULL,
 		.state     = state
 	}
-	while (iterator.partition->used == 0)
-		iterator.partition++;
-	iterator.crtc = iterator.partition->crtcs;
 	return iterator;
 }
 
 /* Get next CRTC */
-int gamma_iterator_next(gamma_iterator_t *iterator)
+int
+gamma_iterator_next(gamma_iterator_t *iterator)
 {
+	/* First CRTC */
+	if (iterator->crtc == NULL) {
+		iterator->site      = iterator->state->sites;
+		iterator->partition = iterator->site->partitions;
+		while (iterator->partition->used == 0)
+			iterator->partition++;
+		iterator->crtc = iterator->partition->crtcs;
+		return 1;
+	}
+
+	/* Next CRTC */
 	size_t crtc_i      = iterator->crtc->crtc + 1;
 	size_t partition_i = iterator->crtc->partition;
 	size_t site_i      = iterator->crtc->site_index;
@@ -151,7 +163,8 @@ next_partition:
 
 
 /* Resolve selections */
-int gamma_resolve_selections(gamma_state_t *state)
+int
+gamma_resolve_selections(gamma_state_t *state)
 {
 	int default_selection = state->selections_made == 1;
 	int r;
@@ -307,7 +320,30 @@ int gamma_resolve_selections(gamma_state_t *state)
 		state->selections++;
 	}
 
-	gamma_common_free_selections(state);
+	gamma_free_selections(state);
 	return 0;
+}
+
+
+/* Restore gamma ramps */
+void
+gamma_restore(gamma_state_t *state)
+{
+	gamma_iterator_t iter = gamma_iterator(state);
+	while (gamma_iterator_next(&iter)) {
+		state->set_ramps(state, iter->crtc, iter->crtc->saved_ramps);
+	}
+}
+
+
+/* Update gamma ramps */
+void
+gamma_update(gamma_state_t *state)
+{
+	gamma_iterator_t iter = gamma_iterator(state);
+	while (gamma_iterator_next(&iter)) {
+		colorramp_fill(iter->crtc->current_ramps, iter->crtc->settings);
+		state->set_ramps(state, iter->crtc, iter->crtc->current_ramps);
+	}
 }
 
