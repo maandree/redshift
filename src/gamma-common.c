@@ -55,7 +55,6 @@ gamma_init(gamma_server_state_t *state)
 	/* Defaults selection */
 	state->selections->crtc = -1;
 	state->selections->partition = -1;
-	state->selections->site_index = 0;
 	state->selections->site = NULL;
 	state->selections->settings.gamma_correction[0] = DEFAULT_GAMMA;
 	state->selections->settings.gamma_correction[1] = DEFAULT_GAMMA;

@@ -112,10 +112,9 @@ struct gamma_site_state_t {
 
 /* CRTC selection state. */
 struct gamma_selection_state_t {
-	/* The CRTC, partition (e.g. screen) and site (e.g. display) indices. */
+	/* The CRTC and partition (e.g. screen) indices. */
 	ssize_t crtc;
 	ssize_t partition;
-	size_t site_index;
 	/* The site identifier. */
 	char *site;
 	/* Colour adjustments. */
