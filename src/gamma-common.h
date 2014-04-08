@@ -24,6 +24,9 @@
 #include <unistd.h>
 
 
+typedef void gamma_data_free_func(void *data);
+
+
 /* Gamma ramp trio */
 typedef struct {
 	/* The number of stops in each ramp */
@@ -105,6 +108,10 @@ typedef struct {
 	/* The selections, zeroth determines the defaults */
 	size_t selections_made;
 	gamma_site_state_t *selections;
+	/* Functions that releases adjustment method implementation specific data */
+	gamma_data_free_func *free_site_data;
+	gamma_data_free_func *free_partition_data;
+	gamma_data_free_func *free_crtc_data;
 } gamma_state_t;
 
 
