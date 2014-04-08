@@ -102,3 +102,40 @@ void gamma_common_free(gamma_state_t* state)
 	}
 }
 
+
+/* Create CRTC iterator */
+gamma_iterator_t gamma_iterator(gamma_state_t* state)
+{
+	gamma_iterator_t iterator = {
+		.crtc      = state->sites->partitions->crtcs,
+		.partition = state->sites->partitions,
+		.site      = state->sites,
+		.state     = state
+	}
+	return iterator;
+}
+
+/* Get next CRTC */
+int gamma_iterator_next(gamma_iterator_t* iterator)
+{
+	size_t crtc_i      = iterator->crtc->crtc + 1;
+	size_t partition_i = iterator->crtc->partition;
+	size_t site_i      = iterator->crtc->site_index;
+
+	if (crtc_i == iterator->partition->crtcs_used) {
+		crtc_i = 0;
+		partition_i += 1;
+	}
+	if (partition_i == iterator->site->partitions_used) {
+		partition_i = 0;
+		site_i += 1;
+	}
+	if (site_i == iterator->state->sites_used)
+		return 0;
+
+	iterator->site      = iterator->state->sites     + site_i;
+	iterator->partition = iterator->site->partitions + partition_i;
+	iterator->crtc      = iterator->partition->crtcs + crtc_i;
+	return 1;
+}
+

@@ -116,11 +116,31 @@ typedef struct {
 } gamma_state_t;
 
 
+/* CRTC iterator */
+typedef struct {
+	/* The current CRTC, partition and site */
+	gamma_crtc_state_t *crtc;
+	gamma_partition_state_t *partition;
+	gamma_site_state_t *site;
+	/* The gamma state whose CRTC:s are being iterated */
+	gamma_state_t *state;
+} gamma_iterator_t;
+
+
+
 /* Free all CRTC selection data in a state */
 void gamma_common_free_selections(gamma_state_t* state);
 
 /* Free all data in a state */
 void gamma_common_free(gamma_state_t* state);
+
+
+/* Create CRTC iterator */
+gamma_iterator_t gamma_iterator(gamma_state_t* state);
+
+/* Get next CRTC */
+int gamma_iterator_next(gamma_iterator_t* iterator);
+
 
 
 #endif /* ! REDSHIFT_GAMMA_COMMON_H */
