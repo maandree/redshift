@@ -196,6 +196,11 @@ void gamma_update(gamma_server_state_t *state);
 int gamma_set_option(gamma_server_state_t *state, const char *key, const char *value, int section);
 
 
+/* Methods for updating adjustments on all CRTC:s. */
+void gamma_update_brightness(gamma_server_state_t *state, float brightness);
+void gamma_update_temperature(gamma_server_state_t *state, float temperature);
+
+
 /* A gamma string contains either one floating point value,
    or three values separated by colon. */
 int parse_gamma_string(const char *str, float gamma[3]);

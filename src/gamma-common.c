@@ -463,6 +463,33 @@ gamma_set_option(gamma_server_state_t *state, const char *key, const char *value
 }
 
 
+/* Methods for updating adjustments on all CRTC:s. */
+
+void
+gamma_update_brightness(gamma_server_state_t *state, float brightness)
+{
+	if (brightness < MIN_BRIGHTNESS) brightness = MIN_BRIGHTNESS;
+#ifdef MAX_BRIGHTNESS
+	if (brightness > MAX_BRIGHTNESS) brightness = MAX_BRIGHTNESS;
+#endif
+
+	gamma_iterator_t iter = gamma_iterator(state);
+	while (gamma_iterator_next(&iter))
+		iter.crtc->settings.brightness = brightness;
+}
+
+void
+gamma_update_temperature(gamma_server_state_t *state, float temperature)
+{
+	if (temperature < MIN_TEMP) temperature = MIN_TEMP;
+	if (temperature > MAX_TEMP) temperature = MAX_TEMP;
+
+	gamma_iterator_t iter = gamma_iterator(state);
+	while (gamma_iterator_next(&iter))
+		iter.crtc->settings.temperature = temperature;
+}
+
+
 /* A gamma string contains either one floating point value,
    or three values separated by colon. */
 int
