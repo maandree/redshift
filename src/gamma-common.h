@@ -24,7 +24,23 @@
 #include <unistd.h>
 
 
+
 typedef void gamma_data_free_func(void *data);
+
+typedef int gamma_open_site_func(gamma_state_t *state,
+				 char *site, gamma_site_state_t *site_out);
+
+typedef int gamma_open_partition_func(gamma_state_t *state,
+				      gamma_site_state_t *site,
+				      size_t partition, gamma_partition_state_t *partition_out);
+
+typedef int gamma_open_crtc_func(gamma_state_t *state,
+				 gamma_site_state_t *site,
+				 gamma_partition_state_t *partition,
+				 size_t crtc, gamma_crtc_state_t *crtc_out);
+
+typedef void gamma_invalid_partition_func(gamma_site_state_t *site, size_t partition);
+
 
 
 /* Gamma ramp trio */
@@ -64,6 +80,8 @@ typedef struct {
 
 /* Partition (e.g. screen) state */
 typedef struct {
+	/* Whether this partion is used */
+	int used;
 	/* Adjustment method implementation specific data */
 	void *data;
 	/* The number of CRTC:s that is available on this site */
@@ -81,8 +99,7 @@ typedef struct {
 	char *site;
 	/* The number of partitions that is available on this site */
 	size_t partitions_available;
-	/* The selected partitions */
-	size_t partitions_used;
+	/* The partitions */
 	gamma_partition_state_t *partitions;
 } gamma_site_state_t;
 
@@ -91,7 +108,7 @@ typedef struct {
 	/* The CRTC, partition (e.g. screen) and site (e.g. display) indices */
 	ssize_t crtc;
 	ssize_t partition;
-	ssize_t site_index;
+	size_t site_index;
 	/* The site identifier */
 	char *site;
 	/* Colour adjustments */
@@ -113,6 +130,12 @@ typedef struct {
 	gamma_data_free_func *free_site_data;
 	gamma_data_free_func *free_partition_data;
 	gamma_data_free_func *free_crtc_data;
+	/* Functions that open sites, partitions and CRTC:s */
+	gamma_open_site_func *open_site;
+	gamma_open_partition_func *open_partition;
+	gamma_open_crtc_func *open_crtc;
+	/* Function that inform about invalid selection of partition */
+	gamma_invalid_partition_func* invalid_partition;
 } gamma_state_t;
 
 
@@ -129,17 +152,21 @@ typedef struct {
 
 
 /* Free all CRTC selection data in a state */
-void gamma_common_free_selections(gamma_state_t* state);
+void gamma_common_free_selections(gamma_state_t *state);
 
 /* Free all data in a state */
-void gamma_common_free(gamma_state_t* state);
+void gamma_common_free(gamma_state_t *state);
 
 
 /* Create CRTC iterator */
-gamma_iterator_t gamma_iterator(gamma_state_t* state);
+gamma_iterator_t gamma_iterator(gamma_state_t *state);
 
 /* Get next CRTC */
-int gamma_iterator_next(gamma_iterator_t* iterator);
+int gamma_iterator_next(gamma_iterator_t *iterator);
+
+
+/* Resolve selections */
+int gamma_resolve_selections(gamma_state_t *state);
 
 
 
