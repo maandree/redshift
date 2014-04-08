@@ -19,6 +19,18 @@
 
 #include "gamma-common.h"
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
+#ifdef ENABLE_NLS
+# include <libintl.h>
+# define _(s) gettext(s)
+#else
+# define _(s) s
+#endif
+
+
 
 /* Initialise the adjustment method common parts of a state, 
    this should be done before initialise the adjustment method
@@ -41,7 +53,7 @@ gamma_init(gamma_state_t *state)
 	/* Defaults selection */
 	state->selections->crtc = -1;
 	state->selections->partition = -1;
-	state->selections->size_index = 0;
+	state->selections->site_index = 0;
 	state->selections->site = NULL;
 	state->selections->settings.gamma[0] = DEFAULT_GAMMA;
 	state->selections->settings.gamma[1] = DEFAULT_GAMMA;
@@ -61,8 +73,8 @@ gamma_free_selections(gamma_state_t *state)
 
 	/* Free data in each selection */
 	for (i = 0; i < state->selections_made; i++)
-		if (state->selections_made[i].site != NULL)
-			free(state->selections_made[i].site);
+		if (state->selections[i].site != NULL)
+			free(state->selections[i].site);
 	state->selections_made = 0;
 
 	/* Free the selection array */
@@ -149,7 +161,7 @@ gamma_iterator(gamma_state_t *state)
 		.partition = NULL,
 		.site      = NULL,
 		.state     = state
-	}
+	};
 	return iterator;
 }
 
@@ -249,9 +261,10 @@ gamma_resolve_selections(gamma_state_t *state)
 			if (r != 0) return r;
 
 			/* calloc is used so that `used` in each partition is set to false */
-			site->partitions = calloc(partitions_available, sizeof(gamma_partition_state_t));
+			site->partitions = calloc(site->partitions_available,
+						  sizeof(gamma_partition_state_t));
 			if (site->partitions == NULL) {
-				partitions_available = 0;
+				site->partitions_available = 0;
 				perror(state->sites != NULL ? "realloc" : "malloc");
 				return -1;
 			}
@@ -302,23 +315,23 @@ gamma_resolve_selections(gamma_state_t *state)
 			   the new array a temporarily variable so that we can
 			   properly release resources on error */
 			gamma_crtc_state_t *new_crtcs;
-			size_t alloc_size = ();
+			size_t alloc_size = partition->crtcs_used + crtc_end - crtc_start;
 			alloc_size *= sizeof(gamma_crtc_state_t);
-			new_crtcs = partition->crtcs_used != NULL ?
-					realloc(partition->crtcs_used, alloc_size) :
+			new_crtcs = partition->crtcs != NULL ?
+					realloc(partition->crtcs, alloc_size) :
 					malloc(alloc_size);
 			if (new_crtcs == NULL) {
-				perror(partition->crtcs_used != NULL ? "realloc" : "malloc");
+				perror(partition->crtcs != NULL ? "realloc" : "malloc");
 				return -1;
 			}
-			partition->crtcs_used = new_crtcs;
+			partition->crtcs = new_crtcs;
 
 			for (size_t c = crtc_start; c < crtc_end; c++) {
 				gamma_crtc_state_t *crtc = partition->crtcs_used;
 				size_t total_ramp_size = 0, rrs, grs;
 				uint16_t *ramps;
 
-				r = state->open_crtc(state, site, partitio, c, crtc);
+				r = state->open_crtc(state, site, partition, c, crtc);
 				if (r != 0) return r;
 				crtc->crtc = c;
 				crtc->partition = p;
@@ -329,20 +342,20 @@ gamma_resolve_selections(gamma_state_t *state)
 				crtc->settings = selection->settings;
 
 				/* Create crtc->settings->current_ramps */
-				crtc->settings->current_ramps = crtc->settings->saved_ramps;
-				total_ramp_size += rrs = crtc->settings->current_ramps.red_size;
-				total_ramp_size += grs = crtc->settings->current_ramps.green_size;
-				total_ramp_size +=       crtc->settings->current_ramps.blue_size;
+				crtc->current_ramps = crtc->saved_ramps;
+				total_ramp_size += rrs = crtc->current_ramps.red_size;
+				total_ramp_size += grs = crtc->current_ramps.green_size;
+				total_ramp_size +=       crtc->current_ramps.blue_size;
 				total_ramp_size *= sizeof(uint16_t);
 				ramps = malloc(total_ramp_size);
-				crtc->settings->current_ramps.red_ramps = ramps;
+				crtc->current_ramps.red = ramps;
 				if (ramps == NULL) {
 					perror("malloc");
 					return -1;
 				}
-				crtc->settings->current_ramps.red_ramps   = ramps;
-				crtc->settings->current_ramps.green_ramps = ramps + rrs;
-				crtc->settings->current_ramps.blue_ramps  = ramps + rrs + grs;
+				crtc->current_ramps.red   = ramps;
+				crtc->current_ramps.green = ramps + rrs;
+				crtc->current_ramps.blue  = ramps + rrs + grs;
 			}
 		}
 	}
@@ -364,7 +377,7 @@ gamma_restore(gamma_state_t *state)
 {
 	gamma_iterator_t iter = gamma_iterator(state);
 	while (gamma_iterator_next(&iter)) {
-		state->set_ramps(state, iter->crtc, iter->crtc->saved_ramps);
+		state->set_ramps(state, iter.crtc, iter.crtc->saved_ramps);
 	}
 }
 
@@ -375,8 +388,8 @@ gamma_update(gamma_state_t *state)
 {
 	gamma_iterator_t iter = gamma_iterator(state);
 	while (gamma_iterator_next(&iter)) {
-		colorramp_fill(iter->crtc->current_ramps, iter->crtc->settings);
-		state->set_ramps(state, iter->crtc, iter->crtc->current_ramps);
+		colorramp_fill(iter.crtc->current_ramps, iter.crtc->settings);
+		state->set_ramps(state, iter.crtc, iter.crtc->current_ramps);
 	}
 }
 
@@ -393,7 +406,7 @@ gamma_set_option(gamma_state_t *state, const char *key, const char *value, int s
 		   properly release resources on error */
 		gamma_selection_state_t *new_selections;
 		size_t alloc_size = state->selections_made + 1;
-		alloc_size *= sizeof(gamma_selection_state_t)
+		alloc_size *= sizeof(gamma_selection_state_t);
 		new_selections = realloc(state->selections, alloc_size);
 		if (new_selections == NULL) {
 			perror("realloc");

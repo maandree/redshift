@@ -24,6 +24,30 @@
 #include <unistd.h>
 
 
+/* Prototypes for the structures,
+   this is required because the structures
+   and the function typedef:s depends
+   on each other */
+struct gamma_ramps_t;
+struct gamma_settings_t;
+struct gamma_crtc_state_t;
+struct gamma_partition_state_t;
+struct gamma_site_state_t;
+struct gamma_selection_state_t;
+struct gamma_state_t;
+struct gamma_iterator_t;
+
+/* Typedef:s of the structures */
+typedef struct gamma_ramps_t           gamma_ramps_t;
+typedef struct gamma_settings_t        gamma_settings_t;
+typedef struct gamma_crtc_state_t      gamma_crtc_state_t;
+typedef struct gamma_partition_state_t gamma_partition_state_t;
+typedef struct gamma_site_state_t      gamma_site_state_t;
+typedef struct gamma_selection_state_t gamma_selection_state_t;
+typedef struct gamma_state_t           gamma_state_t;
+typedef struct gamma_iterator_t        gamma_iterator_t; 
+
+
 
 typedef void gamma_data_free_func(void *data);
 
@@ -41,14 +65,14 @@ typedef int gamma_open_crtc_func(gamma_state_t *state,
 
 typedef void gamma_invalid_partition_func(gamma_site_state_t *site, size_t partition);
 
-typedef int gamma_set_ramps_func(gamma_state_state_t *state, gamma_crtc_state_t *crtc, gamma_ramps_t ramps);
+typedef int gamma_set_ramps_func(gamma_state_t *state, gamma_crtc_state_t *crtc, gamma_ramps_t ramps);
 
-typedef int gamma_set_option_func(gamma_state_state_t *state, const char *key, const char *value, int section);
+typedef int gamma_set_option_func(gamma_state_t *state, const char *key, const char *value, int section);
 
 
 
 /* Gamma ramp trio */
-typedef struct {
+struct gamma_ramps_t {
 	/* The number of stops in each ramp */
 	size_t red_size;
 	size_t green_size;
@@ -57,17 +81,17 @@ typedef struct {
 	uint16_t *red;
 	uint16_t *green;
 	uint16_t *blue;
-} gamma_ramps_t;
+};
 
 /* Colour adjustment settings */
-typedef struct {
+struct gamma_settings_t {
 	float gamma[3];
 	float brightness;
 	float temperature;
-} gamma_settings_t;
+};
 
 /* CRTC state */
-typedef struct {
+struct gamma_crtc_state_t {
 	/* Adjustment method implementation specific data */
 	void *data;
 	/* The CRTC, partition (e.g. screen) and site (e.g. display) indices */
@@ -80,10 +104,10 @@ typedef struct {
 	gamma_ramps_t current_ramps;
 	/* Colour adjustments */
 	gamma_settings_t settings;
-} gamma_crtc_state_t;
+};
 
 /* Partition (e.g. screen) state */
-typedef struct {
+struct gamma_partition_state_t {
 	/* Whether this partion is used */
 	int used;
 	/* Adjustment method implementation specific data */
@@ -93,10 +117,10 @@ typedef struct {
 	/* The selected CRTC:s */
 	size_t crtcs_used;
 	gamma_crtc_state_t *crtcs;
-} gamma_partition_state_t;
+};
 
 /* Site (e.g. display) state */
-typedef struct {
+struct gamma_site_state_t {
 	/* Adjustment method implementation specific data */
 	void *data;
 	/* The site identifier */
@@ -105,10 +129,10 @@ typedef struct {
 	size_t partitions_available;
 	/* The partitions */
 	gamma_partition_state_t *partitions;
-} gamma_site_state_t;
+};
 
 /* CRTC selection state */
-typedef struct {
+struct gamma_selection_state_t {
 	/* The CRTC, partition (e.g. screen) and site (e.g. display) indices */
 	ssize_t crtc;
 	ssize_t partition;
@@ -117,10 +141,10 @@ typedef struct {
 	char *site;
 	/* Colour adjustments */
 	gamma_settings_t settings;
-} gamma_selection_state_t;
+};
 
 /* Method state */
-typedef struct {
+struct gamma_state_t {
 	/* Adjustment method implementation specific data */
 	void *data;
 	/* The selected sites */
@@ -141,20 +165,20 @@ typedef struct {
 	/* Function that inform about invalid selection of partition */
 	gamma_invalid_partition_func *invalid_partition;
 	/* Function that applies a gamma ramp */
-	gamma_set_ramps_func *set_gamma;
+	gamma_set_ramps_func *set_ramps;
 	gamma_set_option_func *set_option;
-} gamma_state_t;
+};
 
 
 /* CRTC iterator */
-typedef struct {
+struct gamma_iterator_t {
 	/* The current CRTC, partition and site */
 	gamma_crtc_state_t *crtc;
 	gamma_partition_state_t *partition;
 	gamma_site_state_t *site;
 	/* The gamma state whose CRTC:s are being iterated */
 	gamma_state_t *state;
-} gamma_iterator_t;
+};
 
 
 
