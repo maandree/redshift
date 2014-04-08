@@ -60,9 +60,11 @@ gamma_init(gamma_server_state_t *state)
 	state->selections->settings.gamma_correction[0] = DEFAULT_GAMMA;
 	state->selections->settings.gamma_correction[1] = DEFAULT_GAMMA;
 	state->selections->settings.gamma_correction[2] = DEFAULT_GAMMA;
+	state->selections->settings.lut_calibration = NULL;
 	state->selections->settings.gamma = DEFAULT_GAMMA;
 	state->selections->settings.brightness = DEFAULT_BRIGHTNESS;
 	state->selections->settings.temperature = NEUTRAL_TEMP;
+	state->selections->settings.lut = NULL;
 
 	return 0;
 }
@@ -110,6 +112,13 @@ gamma_free(gamma_server_state_t *state)
 			/* Free each CRTC. */
 			for (c = 0; c < partition->crtcs_used; c++) {
 				crtc = partition->crtcs + c;
+
+				/* Free lookup table with adjustments. */
+				if (crtc->settings.lut != NULL) {
+					if (crtc->settings.lut->red != NULL)
+						free(crtc->settings.lut->red);
+					free(crtc->settings.lut);
+				}
 
 				/* Free gamma ramps. */
 				if (crtc->saved_ramps.red != NULL)

@@ -66,16 +66,20 @@ typedef struct {
 
 /* Colour adjustment settings. */
 typedef struct {
-	/* The monitors gamma correction */
+	/* The monitors gamma correction. */
 	float gamma_correction[3];
+	/* Lookup table for monitor calibration. */
+	gamma_ramps_t *lut_calibration;
 	/* Adjustments.
 	   The gamma is only one value, rather than
 	   three becuase it is not an correction,
 	   but rather an adjustment as suggest in
-	   https://github.com/jonls/redshift/issues/10 */
+	   <https://github.com/jonls/redshift/issues/10>. */
 	float gamma;
 	float brightness;
 	float temperature;
+	/* Lookup table with adjustments. */
+	gamma_ramps_t *lut;
 } gamma_settings_t;
 
 
