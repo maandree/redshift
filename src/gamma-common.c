@@ -18,6 +18,8 @@
 */
 
 #include "gamma-common.h"
+#include "adjustments.h"
+#include "colorramp.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -34,9 +36,9 @@
 
 /* Initialise the adjustment method common parts of a state, 
    this should be done before initialise the adjustment method
-   specific parts */
+   specific parts. */
 int
-gamma_init(gamma_state_t *state)
+gamma_init(gamma_server_state_t *state)
 {
 	state->data = NULL;
 	state->sites_used = 0;
@@ -65,86 +67,86 @@ gamma_init(gamma_state_t *state)
 }
 
 
-/* Free all CRTC selection data in a state */
+/* Free all CRTC selection data in a state. */
 void
-gamma_free_selections(gamma_state_t *state)
+gamma_free_selections(gamma_server_state_t *state)
 {
 	size_t i;
 
-	/* Free data in each selection */
+	/* Free data in each selection. */
 	for (i = 0; i < state->selections_made; i++)
 		if (state->selections[i].site != NULL)
 			free(state->selections[i].site);
 	state->selections_made = 0;
 
-	/* Free the selection array */
+	/* Free the selection array. */
 	if (state->selections != NULL) {
 		free(state->selections);
 		state->selections = NULL;
 	}
 }
 
-/* Free all data in a state */
+/* Free all data in a state. */
 void
-gamma_free(gamma_state_t *state)
+gamma_free(gamma_server_state_t *state)
 {
 	size_t s, p, c;
 	gamma_site_state_t *site;
 	gamma_partition_state_t *partition;
 	gamma_crtc_state_t *crtc;
 
-	/* Free selections */
+	/* Free selections. */
 	gamma_free_selections(state);
 
-	/* Free each site */
+	/* Free each site. */
 	for (s = 0; s < state->sites_used; s++) {
 		site = state->sites + s;
-		/* Free each partition */
+		/* Free each partition. */
 		for (p = 0; p < site->partitions_available; p++) {
 			partition = site->partitions + p;
 			if (partition->used == 0)
 				continue;
-			/* Free each CRTC */
+			/* Free each CRTC. */
 			for (c = 0; c < partition->crtcs_used; c++) {
 				crtc = partition->crtcs + c;
 
-				/* Free gamma ramps */
+				/* Free gamma ramps. */
 				if (crtc->saved_ramps.red != NULL)
 					free(crtc->saved_ramps.red);
 				if (crtc->current_ramps.red != NULL)
 					free(crtc->current_ramps.red);
 
-				/* Free method dependent CRTC data */
+				/* Free method dependent CRTC data. */
 				if (crtc->data != NULL)
 					state->free_crtc_data(crtc->data);
 			}
-			/* Free CRTC array */
+			/* Free CRTC array. */
 			if (partition->crtcs != NULL)
 				free(partition->crtcs);
 
-			/* Free method dependent partition data */
+			/* Free method dependent partition data. */
 			if (partition->data != NULL)
 				state->free_partition_data(partition->data);
 		}
-		/* Free partition array */
+		/* Free partition array. */
 		if (site->partitions != NULL)
 			free(site->partitions);
 
-		/* Free site identifier */
+		/* Free site identifier. */
 		if (site->site != NULL)
 			free(site->site);
 
-		/* Free method dependent site data */
+		/* Free method dependent site data. */
 		if (site->data != NULL)
 			state->free_site_data(site->data);
 	}
-	/* Free site array */
+	/* Free site array. */
 	if (state->sites != NULL) {
 		free(state->sites);
 		state->sites = NULL;
 	}
 
-	/* Free method dependent state data */
+	/* Free method dependent state data. */
 	if (state->data != NULL) {
 		state->free_state_data(state->data);
 		state->data = NULL;
@@ -152,9 +154,9 @@ gamma_free(gamma_state_t *state)
 }
 
 
-/* Create CRTC iterator */
+/* Create CRTC iterator. */
 gamma_iterator_t
-gamma_iterator(gamma_state_t *state)
+gamma_iterator(gamma_server_state_t *state)
 {
 	gamma_iterator_t iterator = {
 		.crtc      = NULL,
@@ -165,11 +167,11 @@ gamma_iterator(gamma_state_t *state)
 	return iterator;
 }
 
-/* Get next CRTC */
+/* Get next CRTC. */
 int
 gamma_iterator_next(gamma_iterator_t *iterator)
 {
-	/* First CRTC */
+	/* First CRTC. */
 	if (iterator->crtc == NULL) {
 		iterator->site      = iterator->state->sites;
 		iterator->partition = iterator->site->partitions;
@@ -179,7 +181,7 @@ gamma_iterator_next(gamma_iterator_t *iterator)
 		return 1;
 	}
 
-	/* Next CRTC */
+	/* Next CRTC. */
 	size_t crtc_i      = iterator->crtc->crtc + 1;
 	size_t partition_i = iterator->crtc->partition;
 	size_t site_i      = iterator->crtc->site_index;
@@ -207,15 +209,15 @@ next_partition:
 }
 
 
-/* Resolve selections */
+/* Resolve selections. */
 int
-gamma_resolve_selections(gamma_state_t *state)
+gamma_resolve_selections(gamma_server_state_t *state)
 {
 	int default_selection = state->selections_made == 1;
 	int r;
 
 	/* Shift the selections so that the iteration finds the
-	   default selection if no other selection is made */
+	   default selection if no other selection is made. */
 	if (default_selection) {
 		state->selections_made += 1;
 		state->selections--;
@@ -228,7 +230,7 @@ gamma_resolve_selections(gamma_state_t *state)
 		size_t partition_start;
 		size_t partition_end;
 
-		/* Find matching already opened site */
+		/* Find matching already opened site. */
 		for (site_index = 0; site_index < state->sites_used; site_index++) {
 			char *test_site = state->sites[site_index].site;
 			if (test_site == NULL || selection->site == NULL) {
@@ -239,11 +241,11 @@ gamma_resolve_selections(gamma_state_t *state)
 				break;
 		}
 
-		/* Open site if not found */
+		/* Open site if not found. */
 		if (site_index == state->sites_used) {
 			/* Grow array with sites, we temporarily store the new array
 			   a temporarily variable so that we can properly release
-			   resources on error */
+			   resources on error. */
 			gamma_site_state_t *new_sites;
 			size_t alloc_size = (site_index + 1) * sizeof(gamma_site_state_t);
 			new_sites = state->sites != NULL ?
@@ -260,7 +262,7 @@ gamma_resolve_selections(gamma_state_t *state)
 			site->site = selection->site;
 			if (r != 0) return r;
 
-			/* calloc is used so that `used` in each partition is set to false */
+			/* calloc is used so that `used` in each partition is set to false. */
 			site->partitions = calloc(site->partitions_available,
 						  sizeof(gamma_partition_state_t));
 			if (site->partitions == NULL) {
@@ -269,20 +271,20 @@ gamma_resolve_selections(gamma_state_t *state)
 				return -1;
 			}
 
-			/* Increment this last, so we do not get segfault on error */
+			/* Increment this last, so we do not get segfault on error. */
 			state->sites_used += 1;
 		} else {
 			site = state->sites + site_index;
 		}
 
-		/* Select partitions */
+		/* Select partitions. */
 		if (selection->partition >= site->partitions_available) {
 			state->invalid_partition(site, selection->partition);
 			return -1;
 		}
 		partition_start = selection->partition < 0 ? 0 : selection->partition;
 		partition_end = selection->partition < 0 ? site->partitions_available : partition_start + 1;
-		/* Open partitions */
+		/* Open partitions. */
 		for (size_t p = partition_start; p < partition_end; p++) {
 			gamma_partition_state_t *partition = site->partitions + p;
 			if (partition->used) continue;
@@ -293,7 +295,7 @@ gamma_resolve_selections(gamma_state_t *state)
 			partition->used = 1;
 		}
 
-		/* Open CRTC:s */
+		/* Open CRTC:s. */
 		for (size_t p = partition_start; p < partition_end; p++) {
 			gamma_partition_state_t *partition = site->partitions + p;
 			size_t crtc_start = selection->crtc < 0 ? 0 : selection->crtc;
@@ -313,7 +315,7 @@ gamma_resolve_selections(gamma_state_t *state)
 
 			/* Grow array with selected CRTC:s, we temporarily store
 			   the new array a temporarily variable so that we can
-			   properly release resources on error */
+			   properly release resources on error. */
 			gamma_crtc_state_t *new_crtcs;
 			size_t alloc_size = partition->crtcs_used + crtc_end - crtc_start;
 			alloc_size *= sizeof(gamma_crtc_state_t);
@@ -327,7 +329,7 @@ gamma_resolve_selections(gamma_state_t *state)
 			partition->crtcs = new_crtcs;
 
 			for (size_t c = crtc_start; c < crtc_end; c++) {
-				gamma_crtc_state_t *crtc = partition->crtcs_used;
+				gamma_crtc_state_t *crtc = partition->crtcs;
 				size_t total_ramp_size = 0, rrs, grs;
 				uint16_t *ramps;
 
@@ -338,10 +340,10 @@ gamma_resolve_selections(gamma_state_t *state)
 				crtc->site_index = site_index;
 				partition->crtcs_used += 1;
 
-				/* Store adjustment settigns */
+				/* Store adjustment settigns. */
 				crtc->settings = selection->settings;
 
-				/* Create crtc->settings->current_ramps */
+				/* Create crtc->current_ramps. */
 				crtc->current_ramps = crtc->saved_ramps;
 				total_ramp_size += rrs = crtc->current_ramps.red_size;
 				total_ramp_size += grs = crtc->current_ramps.green_size;
@@ -360,7 +362,7 @@ gamma_resolve_selections(gamma_state_t *state)
 		}
 	}
 
-	/* Undo the shift made in the beginning of this function */
+	/* Undo the shift made in the beginning of this function. */
 	if (default_selection) {
 		state->selections_made -= 1;
 		state->selections++;
@@ -371,9 +373,9 @@ gamma_resolve_selections(gamma_state_t *state)
 }
 
 
-/* Restore gamma ramps */
+/* Restore gamma ramps. */
 void
-gamma_restore(gamma_state_t *state)
+gamma_restore(gamma_server_state_t *state)
 {
 	gamma_iterator_t iter = gamma_iterator(state);
 	while (gamma_iterator_next(&iter)) {
@@ -382,9 +384,9 @@ gamma_restore(gamma_state_t *state)
 }
 
 
-/* Update gamma ramps */
+/* Update gamma ramps. */
 void
-gamma_update(gamma_state_t *state)
+gamma_update(gamma_server_state_t *state)
 {
 	gamma_iterator_t iter = gamma_iterator(state);
 	while (gamma_iterator_next(&iter)) {
@@ -394,16 +396,16 @@ gamma_update(gamma_state_t *state)
 }
 
 
-/* Parse and apply an option */
+/* Parse and apply an option. */
 int
-gamma_set_option(gamma_state_t *state, const char *key, const char *value, int section)
+gamma_set_option(gamma_server_state_t *state, const char *key, const char *value, int section)
 {
 	int r;
 
 	if (section == state->selections_made) {
 		/* Grow array with selections, we temporarily store
 		   the new array a temporarily variable so that we can
-		   properly release resources on error */
+		   properly release resources on error. */
 		gamma_selection_state_t *new_selections;
 		size_t alloc_size = state->selections_made + 1;
 		alloc_size *= sizeof(gamma_selection_state_t);
@@ -414,10 +416,10 @@ gamma_set_option(gamma_state_t *state, const char *key, const char *value, int s
 		}
 		state->selections = new_selections;
 
-		/* Copy default selection */
+		/* Copy default selection. */
 		state->selections[section] = *(state->selections);
 
-		/* Increment this last, so we do not get segfault on error */
+		/* Increment this last, so we do not get segfault on error. */
 		state->selections_made += 1;
 	}
 
@@ -457,6 +459,33 @@ gamma_set_option(gamma_state_t *state, const char *key, const char *value, int s
 		fprintf(stderr, _("Unknown method parameter: `%s'.\n"), key);
 		return -1;
 	}
+	return 0;
+}
+
+
+/* A gamma string contains either one floating point value,
+   or three values separated by colon. */
+int
+parse_gamma_string(const char *str, float gamma[3])
+{
+	char *s = strchr(str, ':');
+	if (s == NULL) {
+		/* Use value for all channels */
+		float g = atof(str);
+		gamma[0] = gamma[1] = gamma[2] = g;
+	} else {
+		/* Parse separate value for each channel */
+		*(s++) = '\0';
+		char *g_s = s;
+		s = strchr(s, ':');
+		if (s == NULL) return -1;
+
+		*(s++) = '\0';
+		gamma[0] = atof(str); /* Red */
+		gamma[1] = atof(g_s); /* Blue */
+		gamma[2] = atof(s); /* Green */
+	}
+
 	return 0;
 }
 

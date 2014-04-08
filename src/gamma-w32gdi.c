@@ -153,8 +153,23 @@ w32gdi_set_temperature(w32gdi_state_t *state, int temp, float brightness,
 	WORD *gamma_g = &gamma_ramps[1*GAMMA_RAMP_SIZE];
 	WORD *gamma_b = &gamma_ramps[2*GAMMA_RAMP_SIZE];
 
-	colorramp_fill(gamma_r, gamma_g, gamma_b, GAMMA_RAMP_SIZE,
-		       temp, brightness, gamma);
+	gamma_ramps_t ramps = {
+		.red_size   = GAMMA_RAMP_SIZE,
+		.green_size = GAMMA_RAMP_SIZE,
+		.blue_size  = GAMMA_RAMP_SIZE,
+		.red   = gamma_r,
+		.green = gamma_g,
+		.blue  = gamma_b
+	};
+	gamma_settings_t settings = {
+		.gamma[0]    = gamma[0],
+		.gamma[1]    = gamma[1],
+		.gamma[2]    = gamma[2],
+		.brightness  = brightness,
+		.temperature = (float)temp
+	};
+
+	colorramp_fill(ramps, settings);
 
 	/* Set new gamma ramps */
 	r = SetDeviceGammaRamp(hDC, gamma_ramps);

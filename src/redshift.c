@@ -45,6 +45,8 @@
 #include "config-ini.h"
 #include "solar.h"
 #include "systemtime.h"
+#include "gamma-common.h"
+#include "adjustments.h"
 
 
 #define MIN(x,y)  ((x) < (y) ? (x) : (y))
@@ -203,21 +205,6 @@ static const location_provider_t location_providers[] = {
 #define MAX_LAT    90.0
 #define MIN_LON  -180.0
 #define MAX_LON   180.0
-#define MIN_TEMP   1000
-#define MAX_TEMP  25000
-#define MIN_BRIGHTNESS  0.1
-#define MAX_BRIGHTNESS  1.0
-#define MIN_GAMMA   0.1
-#define MAX_GAMMA  10.0
-
-/* Default values for parameters. */
-#define DEFAULT_DAY_TEMP    5500
-#define DEFAULT_NIGHT_TEMP  3500
-#define DEFAULT_BRIGHTNESS   1.0
-#define DEFAULT_GAMMA        1.0
-
-/* The color temperature when no adjustment is applied. */
-#define NEUTRAL_TEMP  6500
 
 /* Angular elevation of the sun at which the color temperature
    transition period starts and ends (in degress).
@@ -564,32 +551,6 @@ method_try_start(const gamma_method_t *method,
 		fprintf(stderr, _("Failed to start adjustment method %s.\n"),
 			method->name);
 		return -1;
-	}
-
-	return 0;
-}
-
-/* A gamma string contains either one floating point value,
-   or three values separated by colon. */
-static int
-parse_gamma_string(const char *str, float gamma[])
-{
-	char *s = strchr(str, ':');
-	if (s == NULL) {
-		/* Use value for all channels */
-		float g = atof(str);
-		gamma[0] = gamma[1] = gamma[2] = g;
-	} else {
-		/* Parse separate value for each channel */
-		*(s++) = '\0';
-		char *g_s = s;
-		s = strchr(s, ':');
-		if (s == NULL) return -1;
-
-		*(s++) = '\0';
-		gamma[0] = atof(str); /* Red */
-		gamma[1] = atof(g_s); /* Blue */
-		gamma[2] = atof(s); /* Green */
 	}
 
 	return 0;

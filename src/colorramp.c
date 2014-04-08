@@ -16,7 +16,10 @@
 
    Copyright (c) 2013  Jon Lund Steffensen <jonlst@gmail.com>
    Copyright (c) 2013  Ingo Thies <ithies@astro.uni-bonn.de>
+   Copyright (c) 2014  Mattias Andrée <maandree@member.fsf.org>
 */
+
+#include "colorramp.h"
 
 #include <stdint.h>
 #include <math.h>
@@ -281,21 +284,23 @@ interpolate_color(float a, const float *c1, const float *c2, float *c)
 }
 
 void
-colorramp_fill(uint16_t *gamma_r, uint16_t *gamma_g, uint16_t *gamma_b,
-	       int size, int temp, float brightness, const float gamma[3])
+colorramp_fill(gamma_ramps_t out_ramps, gamma_settings_t adjustments)
 {
 	/* Approximate white point */
+	int temp = (int)(adjustments.temperature + 0.5f);
 	float white_point[3];
 	float alpha = (temp % 100) / 100.0;
 	int temp_index = ((temp - 1000) / 100)*3;
 	interpolate_color(alpha, &blackbody_color[temp_index],
 			  &blackbody_color[temp_index+3], white_point);
 
-#define F(Y, C)  pow((Y) * brightness * white_point[C], 1.0/gamma[C])
+#define F(Y, C)  pow((Y) * adjustments.brightness * white_point[C], \
+		     1.0f / adjustments.gamma[C])
 
-	for (int i = 0; i < size; i++) {
-		gamma_r[i] = F((float)i/size, 0) * (UINT16_MAX+1);
-		gamma_g[i] = F((float)i/size, 1) * (UINT16_MAX+1);
-		gamma_b[i] = F((float)i/size, 2) * (UINT16_MAX+1);
-	}
+	for (size_t i = 0; i < out_ramps.red_size;   i++)
+		out_ramps.red[i]   = F((float)i / out_ramps.red_size,   0) * (UINT16_MAX+1);
+	for (size_t i = 0; i < out_ramps.green_size; i++)
+		out_ramps.green[i] = F((float)i / out_ramps.green_size, 1) * (UINT16_MAX+1);
+	for (size_t i = 0; i < out_ramps.blue_size;  i++)
+		out_ramps.blue[i]  = F((float)i / out_ramps.blue_size,  2) * (UINT16_MAX+1);
 }

@@ -268,8 +268,24 @@ drm_set_temperature(drm_state_t *state, int temp, float brightness, const float 
 			}
 			last_gamma_size = crtcs->gamma_size;
 		}
-		colorramp_fill(r_gamma, g_gamma, b_gamma, crtcs->gamma_size,
-			       temp, brightness, gamma);
+
+		gamma_ramps_t ramps = {
+			.red_size   = crtcs->gamma_size,
+			.green_size = crtcs->gamma_size,
+			.blue_size  = crtcs->gamma_size,
+			.red   = r_gamma,
+			.green = g_gamma,
+			.blue  = b_gamma
+		};
+		gamma_settings_t settings = {
+			.gamma[0]    = gamma[0],
+			.gamma[1]    = gamma[1],
+			.gamma[2]    = gamma[2],
+			.brightness  = brightness,
+			.temperature = (float)temp
+		};
+
+		colorramp_fill(ramps, settings);
 		drmModeCrtcSetGamma(state->fd, crtcs->crtc_id, crtcs->gamma_size,
 				    r_gamma, g_gamma, b_gamma);
 	}
