@@ -20,6 +20,38 @@
 #include "gamma-common.h"
 
 
+/* Initialise the adjustment method common parts of a state, 
+   this should be done before initialise the adjustment method
+   specific parts */
+int
+gamma_init(gamma_state_t *state)
+{
+	state->data = NULL;
+	state->sites_used = 0;
+	state->sites = NULL;
+	state->selections_made = 1;
+	state->selections = malloc(sizeof(gamma_selection_state_t));
+
+	if (state->selections == NULL) {
+		perror("malloc");
+		return -1;
+	}
+
+	/* Defaults selection */
+	state->selections->crtc = -1;
+	state->selections->partition = -1;
+	state->selections->size_index = 0;
+	state->selections->site = NULL;
+	state->selections->settings.gamma[0] = DEFAULT_GAMMA;
+	state->selections->settings.gamma[1] = DEFAULT_GAMMA;
+	state->selections->settings.gamma[2] = DEFAULT_GAMMA;
+	state->selections->settings.brightness = DEFAULT_BRIGHTNESS;
+	state->selections->settings.temperature = NEUTRAL_TEMP;
+
+	return 0;
+}
+
+
 /* Free all CRTC selection data in a state */
 void
 gamma_free_selections(gamma_state_t *state)

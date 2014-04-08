@@ -126,7 +126,7 @@ typedef struct {
 	gamma_site_state_t *sites;
 	/* The selections, zeroth determines the defaults */
 	size_t selections_made;
-	gamma_site_state_t *selections;
+	gamma_selection_state_t *selections;
 	/* Functions that releases adjustment method implementation specific data */
 	gamma_data_free_func *free_state_data;
 	gamma_data_free_func *free_site_data;
@@ -153,6 +153,12 @@ typedef struct {
 	gamma_state_t *state;
 } gamma_iterator_t;
 
+
+
+/* Initialise the adjustment method common parts of a state, 
+   this should be done before initialise the adjustment method
+   specific parts */
+int gamma_init(gamma_state_t *state);
 
 
 /* Free all CRTC selection data in a state */
