@@ -278,9 +278,10 @@ drm_set_temperature(drm_state_t *state, int temp, float brightness, const float 
 			.blue  = b_gamma
 		};
 		gamma_settings_t settings = {
-			.gamma[0]    = gamma[0],
-			.gamma[1]    = gamma[1],
-			.gamma[2]    = gamma[2],
+			.gamma_correction[0] = gamma[0],
+			.gamma_correction[1] = gamma[1],
+			.gamma_correction[2] = gamma[2],
+			.gamma       = DEFAULT_GAMMA,
 			.brightness  = brightness,
 			.temperature = (float)temp
 		};

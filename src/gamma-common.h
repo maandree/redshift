@@ -197,6 +197,7 @@ int gamma_set_option(gamma_server_state_t *state, const char *key, const char *v
 
 
 /* Methods for updating adjustments on all CRTC:s. */
+void gamma_update_gamma(gamma_server_state_t *state, float gamma);
 void gamma_update_brightness(gamma_server_state_t *state, float brightness);
 void gamma_update_temperature(gamma_server_state_t *state, float temperature);
 

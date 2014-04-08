@@ -57,9 +57,10 @@ gamma_init(gamma_server_state_t *state)
 	state->selections->partition = -1;
 	state->selections->site_index = 0;
 	state->selections->site = NULL;
-	state->selections->settings.gamma[0] = DEFAULT_GAMMA;
-	state->selections->settings.gamma[1] = DEFAULT_GAMMA;
-	state->selections->settings.gamma[2] = DEFAULT_GAMMA;
+	state->selections->settings.gamma_correction[0] = DEFAULT_GAMMA;
+	state->selections->settings.gamma_correction[1] = DEFAULT_GAMMA;
+	state->selections->settings.gamma_correction[2] = DEFAULT_GAMMA;
+	state->selections->settings.gamma = DEFAULT_GAMMA;
 	state->selections->settings.brightness = DEFAULT_BRIGHTNESS;
 	state->selections->settings.temperature = NEUTRAL_TEMP;
 
@@ -449,9 +450,9 @@ gamma_set_option(gamma_server_state_t *state, const char *key, const char *value
 			return -1;
 		}
 #endif
-		state->selections[section].settings.gamma[0] = gamma[0];
-		state->selections[section].settings.gamma[1] = gamma[1];
-		state->selections[section].settings.gamma[2] = gamma[2];
+		state->selections[section].settings.gamma_correction[0] = gamma[0];
+		state->selections[section].settings.gamma_correction[1] = gamma[1];
+		state->selections[section].settings.gamma_correction[2] = gamma[2];
 	} else {
 		r = state->set_option(state, key, value, section);
 		if (r <= 0)
@@ -464,6 +465,19 @@ gamma_set_option(gamma_server_state_t *state, const char *key, const char *value
 
 
 /* Methods for updating adjustments on all CRTC:s. */
+
+void
+gamma_update_gamma(gamma_server_state_t *state, float gamma)
+{
+	if (gamma < MIN_GAMMA) gamma = MIN_GAMMA;
+#ifdef MAX_BRIGHTNESS
+	if (gamma > MAX_GAMMA) gamma = MAX_GAMMA;
+#endif
+
+	gamma_iterator_t iter = gamma_iterator(state);
+	while (gamma_iterator_next(&iter))
+		iter.crtc->settings.gamma = gamma;
+}
 
 void
 gamma_update_brightness(gamma_server_state_t *state, float brightness)

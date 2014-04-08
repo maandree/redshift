@@ -335,9 +335,10 @@ randr_set_temperature_for_crtc(randr_state_t *state, int crtc_num, int temp,
 		.blue  = gamma_b
 	};
 	gamma_settings_t settings = {
-		.gamma[0]    = gamma[0],
-		.gamma[1]    = gamma[1],
-		.gamma[2]    = gamma[2],
+		.gamma_correction[0] = gamma[0],
+		.gamma_correction[1] = gamma[1],
+		.gamma_correction[2] = gamma[2],
+		.gamma       = DEFAULT_GAMMA,
 		.brightness  = brightness,
 		.temperature = (float)temp
 	};

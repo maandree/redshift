@@ -294,13 +294,19 @@ colorramp_fill(gamma_ramps_t out_ramps, gamma_settings_t adjustments)
 	interpolate_color(alpha, &blackbody_color[temp_index],
 			  &blackbody_color[temp_index+3], white_point);
 
+	float gamma[3] = {
+		adjustments.gamma_correction[0] * adjustments.gamma,
+		adjustments.gamma_correction[1] * adjustments.gamma,
+		adjustments.gamma_correction[2] * adjustments.gamma
+	};
+
 #define F(Y, C)  pow((Y) * adjustments.brightness * white_point[C], \
-		     1.0f / adjustments.gamma[C])
+		     1.0f / gamma[C]) * (UINT16_MAX+1)
 
 	for (size_t i = 0; i < out_ramps.red_size;   i++)
-		out_ramps.red[i]   = F((float)i / out_ramps.red_size,   0) * (UINT16_MAX+1);
+		out_ramps.red[i]   = F((float)i / out_ramps.red_size,   0);
 	for (size_t i = 0; i < out_ramps.green_size; i++)
-		out_ramps.green[i] = F((float)i / out_ramps.green_size, 1) * (UINT16_MAX+1);
+		out_ramps.green[i] = F((float)i / out_ramps.green_size, 1);
 	for (size_t i = 0; i < out_ramps.blue_size;  i++)
-		out_ramps.blue[i]  = F((float)i / out_ramps.blue_size,  2) * (UINT16_MAX+1);
+		out_ramps.blue[i]  = F((float)i / out_ramps.blue_size,  2);
 }
