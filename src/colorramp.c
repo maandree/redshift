@@ -376,8 +376,10 @@ colorramp_fill(gamma_ramps_t out_ramps, gamma_settings_t adjustments)
 	for (int c = 0; c < 3; c++) {
 		uint16_t *cfilter = filter[c];
 		size_t gamma_size = gamma_sizes[c];
-		for (size_t i = 0; i < gamma_size; i++)
-			cfilter[i] = F((float)i / gamma_size, c) * (UINT16_MAX+1);
+		for (size_t i = 0; i < gamma_size; i++) {
+			uint32_t y = F((float)i / gamma_size, c) * (UINT16_MAX+1);
+			cfilter[i] = (uint16_t)(y > UINT16_MAX ? UINT16_MAX : y);
+		}
 	}
 
 
