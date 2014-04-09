@@ -189,10 +189,20 @@ gamma_iterator_next(gamma_iterator_t *iterator)
 {
 	/* First CRTC. */
 	if (iterator->crtc == NULL) {
+		if (iterator->state->sites_used == 0)
+			return 0;
 		iterator->site      = iterator->state->sites;
 		iterator->partition = iterator->site->partitions;
-		while (iterator->partition->used == 0)
+		gamma_partition_state_t *partitions_end =
+			iterator->site->partitions +
+			iterator->site->partitions_available;
+		while (iterator->partition->used == 0) {
 			iterator->partition++;
+			if (iterator->partition == partitions_end)
+				return 0;
+		}
+		if (iterator->partition->crtcs_used == 0)
+			return 0;
 		iterator->crtc = iterator->partition->crtcs;
 		return 1;
 	}
@@ -418,14 +428,17 @@ gamma_restore(gamma_server_state_t *state)
 
 
 /* Update gamma ramps. */
-void
+int
 gamma_update(gamma_server_state_t *state)
 {
 	gamma_iterator_t iter = gamma_iterator(state);
+	int r;
 	while (gamma_iterator_next(&iter)) {
 		colorramp_fill(iter.crtc->current_ramps, iter.crtc->settings);
-		state->set_ramps(state, iter.crtc, iter.crtc->current_ramps);
+		r = state->set_ramps(state, iter.crtc, iter.crtc->current_ramps);
+		if (r != 0) return r;
 	}
+	return 0;
 }
 
 

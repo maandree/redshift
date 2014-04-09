@@ -67,7 +67,8 @@ typedef void gamma_invalid_partition_func(gamma_site_state_t *site, size_t parti
 
 typedef int gamma_set_ramps_func(gamma_server_state_t *state, gamma_crtc_state_t *crtc, gamma_ramps_t ramps);
 
-typedef int gamma_set_option_func(gamma_server_state_t *state, const char *key, const char *value, int section);
+typedef int gamma_set_option_func(gamma_server_state_t *state,
+				  const char *key, const char *value, ssize_t section);
 
 
 
@@ -203,7 +204,7 @@ int gamma_resolve_selections(gamma_server_state_t *state);
 void gamma_restore(gamma_server_state_t *state);
 
 /* Update gamma ramps. */
-void gamma_update(gamma_server_state_t *state);
+int gamma_update(gamma_server_state_t *state);
 
 
 /* Parse and apply an option. */
