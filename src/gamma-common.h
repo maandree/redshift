@@ -121,6 +121,8 @@ struct gamma_selection_state_t {
 	char *site;
 	/* Colour adjustments. */
 	gamma_settings_t settings;
+	/* Whether or not to preserve initial calibrations. */
+	int preserve_calibrations;
 };
 
 /* Method state. */

@@ -65,6 +65,7 @@ gamma_init(gamma_server_state_t *state)
 	state->selections->settings.temperature = NEUTRAL_TEMP;
 	state->selections->settings.lut_pre = NULL;
 	state->selections->settings.lut_post = NULL;
+	state->selections->preserve_calibrations = 0;
 
 	return 0;
 }
@@ -370,6 +371,10 @@ gamma_resolve_selections(gamma_server_state_t *state)
 
 				/* Store adjustment settigns. */
 				crtc->settings = selection->settings;
+
+				/* Preserve initial calibrations. */
+				if (selection->preserve_calibrations)
+					crtc->settings.lut_calibration = &(crtc->saved_ramps);
 
 				/* Create crtc->current_ramps. */
 				crtc->current_ramps = crtc->saved_ramps;
