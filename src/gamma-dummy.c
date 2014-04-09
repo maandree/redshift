@@ -67,6 +67,7 @@ gamma_dummy_init(gamma_server_state_t *state)
 int
 gamma_dummy_start(gamma_server_state_t *state)
 {
+	(void) state;
 	fputs(_("WARNING: Using dummy gamma method! "
 		"Display will not be affected by this gamma method.\n"),
 	      stderr);

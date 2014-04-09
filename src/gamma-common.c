@@ -208,7 +208,7 @@ gamma_iterator_next(gamma_iterator_t *iterator)
 	}
 
 	/* Next CRTC. */
-	size_t crtc_i      = iterator->crtc - iterator->partition->crtcs + 1;
+	size_t crtc_i      = (size_t)(iterator->crtc - iterator->partition->crtcs) + 1;
 	size_t partition_i = iterator->crtc->partition;
 	size_t site_i      = iterator->crtc->site_index;
 
@@ -332,10 +332,10 @@ gamma_resolve_selections(gamma_server_state_t *state)
 
 		/* Select partitions. */
 		if (selection->partition >= (ssize_t)(site->partitions_available)) {
-			state->invalid_partition(site, selection->partition);
+			state->invalid_partition(site, (size_t)(selection->partition));
 			goto fail;
 		}
-		partition_start = selection->partition < 0 ? 0 : selection->partition;
+		partition_start = selection->partition < 0 ? 0 : (size_t)(selection->partition);
 		partition_end = selection->partition < 0 ? site->partitions_available : partition_start + 1;
 		/* Open partitions. */
 		for (size_t p = partition_start; p < partition_end; p++) {
@@ -354,14 +354,14 @@ gamma_resolve_selections(gamma_server_state_t *state)
 		/* Open CRTC:s. */
 		for (size_t p = partition_start; p < partition_end; p++) {
 			gamma_partition_state_t *partition = site->partitions + p;
-			size_t crtc_start = selection->crtc < 0 ? 0 : selection->crtc;
+			size_t crtc_start = selection->crtc < 0 ? 0 : (size_t)(selection->crtc);
 			size_t crtc_end = selection->crtc < 0 ? partition->crtcs_available : crtc_start + 1;
 
 			if (selection->crtc >= (ssize_t)(partition->crtcs_available)) {
-				fprintf(stderr, _("CRTC %d does not exist. "),
+				fprintf(stderr, _("CRTC %ld does not exist. "),
 					selection->crtc);
 				if (partition->crtcs_available > 1) {
-					fprintf(stderr, _("Valid CRTCs are [0-%d].\n"),
+					fprintf(stderr, _("Valid CRTCs are [0-%ld].\n"),
 						partition->crtcs_available - 1);
 				} else {
 					fprintf(stderr, _("Only CRTC 0 exists.\n"));
@@ -475,7 +475,7 @@ gamma_set_option(gamma_server_state_t *state, const char *key, const char *value
 {
 	int r;
 
-	if (section == state->selections_made) {
+	if (section == (ssize_t)state->selections_made) {
 		/* Grow array with selections, we temporarily store
 		   the new array a temporarily variable so that we can
 		   properly release resources on error. */
@@ -592,25 +592,25 @@ __gamma_update_all(temperature)
 #define __test(ANCESTOR, THIS)  (crtcs.THIS < 0 || iter.THIS == iter.ANCESTOR->THIS##s + crtcs.THIS)
 #define __test_all()            (__test(state, site) && __test(site, partition) && __test(partition, crtc))
 
-#define __update(PROP)									\
-	if (crtcs.site < 0 || crtcs.partition < 0 || crtcs.crtc < 0) {			\
-		gamma_iterator_t iter = gamma_iterator(state);				\
-		if (crtcs.site < 0 && crtcs.partition < 0 && crtcs.crtc < 0) {		\
-			while (gamma_iterator_next(&iter))				\
-				iter.crtc->settings.PROP = PROP;			\
-		} else {								\
-			while (gamma_iterator_next(&iter))				\
-				if (__test_all())					\
-					iter.crtc->settings.PROP = PROP;		\
-		}									\
-	} else if (crtcs.site < state->sites_used) {					\
-		gamma_site_state_t site = state->sites[crtcs.site];			\
-		gamma_partition_state_t partition;					\
-		if (crtcs.partition < site.partitions_available) {			\
-			partition = site.partitions[crtcs.partition];			\
-			if (partition.used && crtcs.crtc < partition.crtcs_used)	\
-				partition.crtcs[crtcs.crtc].settings.PROP = PROP;	\
-		}									\
+#define __update(PROP)										\
+	if (crtcs.site < 0 || crtcs.partition < 0 || crtcs.crtc < 0) {				\
+		gamma_iterator_t iter = gamma_iterator(state);					\
+		if (crtcs.site < 0 && crtcs.partition < 0 && crtcs.crtc < 0) {			\
+			while (gamma_iterator_next(&iter))					\
+				iter.crtc->settings.PROP = PROP;				\
+		} else {									\
+			while (gamma_iterator_next(&iter))					\
+				if (__test_all())						\
+					iter.crtc->settings.PROP = PROP;			\
+		}										\
+	} else if ((size_t)crtcs.site < state->sites_used) {					\
+		gamma_site_state_t site = state->sites[crtcs.site];				\
+		gamma_partition_state_t partition;						\
+		if ((size_t)crtcs.partition < site.partitions_available) {			\
+			partition = site.partitions[crtcs.partition];				\
+			if (partition.used && (size_t)crtcs.crtc < partition.crtcs_used)	\
+				partition.crtcs[crtcs.crtc].settings.PROP = PROP;		\
+		}										\
 	}
 
 void

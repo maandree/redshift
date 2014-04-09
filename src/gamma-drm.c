@@ -116,13 +116,19 @@ drm_open_partition(gamma_server_state_t *state, gamma_site_state_t *site,
 	/* Acquire mode resources. */
 	data->res = drmModeGetResources(data->fd);
 	if (data->res == NULL) {
-		fprintf(stderr, _("Failed to get DRM mode resources\n"));
+		fprintf(stderr, _("Failed to get DRM mode resources.\n"));
+		close(data->fd);
+		free(data);
+		return -1;
+	}
+	if (data->res->count_crtcs < 0) {
+		fprintf(stderr, _("Got negative number of graphics cards from DRM.\n"));
 		close(data->fd);
 		free(data);
 		return -1;
 	}
 
-	partition_out->crtcs_available = data->res->count_crtcs;
+	partition_out->crtcs_available = (size_t)(data->res->count_crtcs);
 	return 0;
 }
 
@@ -130,8 +136,11 @@ static int
 drm_open_crtc(gamma_server_state_t *state, gamma_site_state_t *site,
 	      gamma_partition_state_t *partition, size_t crtc, gamma_crtc_state_t *crtc_out)
 {
+	(void) state;
+	(void) site;
+
 	drm_card_data_t *card = partition->data;
-	int crtc_id = card->res->crtcs[crtc];
+	uint32_t crtc_id = card->res->crtcs[(size_t)crtc];
 	crtc_out->data = (void*)(size_t)crtc_id;
 	drmModeCrtc *crtc_info = drmModeGetCrtc(card->fd, crtc_id);
 	if (crtc_info == NULL) {
@@ -142,8 +151,8 @@ drm_open_crtc(gamma_server_state_t *state, gamma_site_state_t *site,
 	ssize_t gamma_size = crtc_info->gamma_size;
 	drmModeFreeCrtc(crtc_info);
 	if (gamma_size < 2) {
-		fprintf(stderr, _("Could not get gamma ramp size for CRTC %i\n"
-				  "on graphics card %i.\n"),
+		fprintf(stderr, _("Could not get gamma ramp size for CRTC %ld\n"
+				  "on graphics card %ld.\n"),
 			crtc, card->index);
 		return -1;
 	}
@@ -152,7 +161,7 @@ drm_open_crtc(gamma_server_state_t *state, gamma_site_state_t *site,
 	crtc_out->saved_ramps.blue_size  = (size_t)gamma_size;
 	
 	/* Valgrind complains about us reading uninitialize memory if we just use malloc. */
-	crtc_out->saved_ramps.red   = calloc(3 * gamma_size, sizeof(uint16_t));
+	crtc_out->saved_ramps.red   = calloc(3 * (size_t)gamma_size, sizeof(uint16_t));
 	crtc_out->saved_ramps.green = crtc_out->saved_ramps.red   + gamma_size;
 	crtc_out->saved_ramps.blue  = crtc_out->saved_ramps.green + gamma_size;
 	if (crtc_out->saved_ramps.red == NULL) {
@@ -163,8 +172,8 @@ drm_open_crtc(gamma_server_state_t *state, gamma_site_state_t *site,
 	int r = drmModeCrtcGetGamma(card->fd, crtc_id, gamma_size, crtc_out->saved_ramps.red,
 				    crtc_out->saved_ramps.green, crtc_out->saved_ramps.blue);
 	if (r < 0) {
-		fprintf(stderr, _("DRM could not read gamma ramps on CRTC %i on\n"
-				  "graphics card %i.\n"),
+		fprintf(stderr, _("DRM could not read gamma ramps on CRTC %ld on\n"
+				  "graphics card %ld.\n"),
 			crtc, card->index);
 		return -1;
 	}
@@ -175,14 +184,13 @@ drm_open_crtc(gamma_server_state_t *state, gamma_site_state_t *site,
 static void
 drm_invalid_partition(gamma_site_state_t *site, size_t partition)
 {
-	fprintf(stderr, _("Card %d does not exist. "),
+	fprintf(stderr, _("Card %ld does not exist. "),
 		partition);
 	if (site->partitions_available > 1) {
-  		fprintf(stderr, _("Valid cards are [0-%d].\n"),
+		fprintf(stderr, _("Valid cards are [0-%ld].\n"),
 			site->partitions_available - 1);
 	} else {
-		fprintf(stderr, _("Only card 0 exists.\n"),
-			partition);
+		fprintf(stderr, _("Only card 0 exists.\n"));
 	}
 }
 
@@ -190,7 +198,7 @@ static int
 drm_set_ramps(gamma_server_state_t *state, gamma_crtc_state_t *crtc, gamma_ramps_t ramps)
 {
 	drm_card_data_t *card_data = state->sites[crtc->site_index].partitions[crtc->partition].data;
-	drmModeCrtcSetGamma(card_data->fd, (int)(size_t)(crtc->data),
+	drmModeCrtcSetGamma(card_data->fd, (uint32_t)(long)(crtc->data),
 			    ramps.red_size, ramps.red, ramps.green, ramps.blue);
 
 	/* Errors must be ignored, because we do not have

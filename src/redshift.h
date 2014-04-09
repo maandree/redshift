@@ -25,10 +25,10 @@
 
 
 /* Bounds for parameters. */
-#define MIN_LAT   -90.0
-#define MAX_LAT    90.0
-#define MIN_LON  -180.0
-#define MAX_LON   180.0
+#define MIN_LAT   -90.0f
+#define MAX_LAT    90.0f
+#define MIN_LON  -180.0f
+#define MAX_LON   180.0f
 
 /* Angular elevation of the sun at which the color temperature
    transition period starts and ends (in degress).
@@ -48,7 +48,7 @@ typedef int gamma_method_start_func(void *state);
 typedef void gamma_method_print_help_func(FILE *f);
 
 typedef struct {
-	char *name;
+	const char *name;
 
 	/* If true, this method will be tried if none is explicitly chosen. */
 	int autostart;
@@ -74,7 +74,7 @@ typedef int location_provider_get_location_func(void *state, float *lat,
 						float *lon);
 
 typedef struct {
-	char *name;
+	const char *name;
 
 	/* Initialize state. Options can be set between init and start. */
 	location_provider_init_func *init;

@@ -63,6 +63,7 @@ static int
 randr_open_site(gamma_server_state_t *state, char *site, gamma_site_state_t *site_out)
 {
 	(void) state;
+	(void) site;
 
 	xcb_generic_error_t *error;
 
@@ -100,7 +101,7 @@ randr_open_site(gamma_server_state_t *state, char *site, gamma_site_state_t *sit
 	/* Get the number of available screens. */
 	const xcb_setup_t *setup = xcb_get_setup(connection);
 	xcb_screen_iterator_t iter = xcb_setup_roots_iterator(setup);
-	site_out->partitions_available = iter.rem;
+	site_out->partitions_available = (size_t)(iter.rem);
 
 	free(ver_reply);
 	return 0;
@@ -110,6 +111,8 @@ static int
 randr_open_partition(gamma_server_state_t *state, gamma_site_state_t *site,
 		     size_t partition, gamma_partition_state_t *partition_out)
 {
+	(void) state;
+
 	randr_screen_data_t *data = malloc(sizeof(randr_screen_data_t));
 	partition_out->data = data;
 	if (data == NULL) {
@@ -134,7 +137,7 @@ randr_open_partition(gamma_server_state_t *state, gamma_site_state_t *site,
 	}
 
 	if (screen == NULL) {
-		fprintf(stderr, _("Screen %i could not be found.\n"),
+		fprintf(stderr, _("Screen %ld could not be found.\n"),
 			partition);
 		free(data);
 		return -1;
@@ -182,9 +185,10 @@ static int
 randr_open_crtc(gamma_server_state_t *state, gamma_site_state_t *site,
 		gamma_partition_state_t *partition, size_t crtc, gamma_crtc_state_t *crtc_out)
 {
+	(void) state;
+
 	randr_screen_data_t *screen_data = partition->data;
 	xcb_randr_crtc_t *crtc_id = screen_data->crtcs + crtc;
-	xcb_screen_t screen = screen_data->screen;
 	xcb_connection_t *connection = site->data;
 	xcb_generic_error_t *error;
 
@@ -206,10 +210,11 @@ randr_open_crtc(gamma_server_state_t *state, gamma_site_state_t *site,
 	}
 
 	ssize_t ramp_size = gamma_size_reply->size;
+	size_t ramp_memsize = (size_t)ramp_size * sizeof(uint16_t);
 	free(gamma_size_reply);
 
 	if (ramp_size < 2) {
-		fprintf(stderr, _("Gamma ramp size too small: %i\n"),
+		fprintf(stderr, _("Gamma ramp size too small: %ld\n"),
 			ramp_size);
 		return -1;
 	}
@@ -219,7 +224,7 @@ randr_open_crtc(gamma_server_state_t *state, gamma_site_state_t *site,
 	crtc_out->saved_ramps.blue_size  = (size_t)ramp_size;
 
 	/* Allocate space for saved gamma ramps. */
-	crtc_out->saved_ramps.red   = malloc(3 * ramp_size * sizeof(uint16_t));
+	crtc_out->saved_ramps.red   = malloc(3 * ramp_memsize);
 	crtc_out->saved_ramps.green = crtc_out->saved_ramps.red   + ramp_size;
 	crtc_out->saved_ramps.blue  = crtc_out->saved_ramps.green + ramp_size;
 	if (crtc_out->saved_ramps.red == NULL) {
@@ -246,9 +251,9 @@ randr_open_crtc(gamma_server_state_t *state, gamma_site_state_t *site,
 	uint16_t *gamma_b = xcb_randr_get_crtc_gamma_blue(gamma_get_reply);
 
 	/* Copy gamma ramps into CRTC state. */
-	memcpy(crtc_out->saved_ramps.red,   gamma_r, ramp_size * sizeof(uint16_t));
-	memcpy(crtc_out->saved_ramps.green, gamma_g, ramp_size * sizeof(uint16_t));
-	memcpy(crtc_out->saved_ramps.blue,  gamma_b, ramp_size * sizeof(uint16_t));
+	memcpy(crtc_out->saved_ramps.red,   gamma_r, ramp_memsize);
+	memcpy(crtc_out->saved_ramps.green, gamma_g, ramp_memsize);
+	memcpy(crtc_out->saved_ramps.blue,  gamma_b, ramp_memsize);
 
 	free(gamma_get_reply);
 	return 0;
@@ -257,13 +262,13 @@ randr_open_crtc(gamma_server_state_t *state, gamma_site_state_t *site,
 static void
 randr_invalid_partition(gamma_site_state_t *site, size_t partition)
 {
-	fprintf(stderr, _("Screen %d does not exist. "),
+	fprintf(stderr, _("Screen %ld does not exist. "),
 		partition);
 	if (site->partitions_available > 1) {
-  		fprintf(stderr, _("Valid screens are [0-%d].\n"),
+		fprintf(stderr, _("Valid screens are [0-%ld].\n"),
 			site->partitions_available - 1);
 	} else {
-		fprintf(stderr, _("Only screen 0 exists, did you mean CRTC %d?\n"),
+		fprintf(stderr, _("Only screen 0 exists, did you mean CRTC %ld?\n"),
 			partition);
 	}
 }

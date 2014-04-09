@@ -53,6 +53,8 @@ vidmode_free_partition(void *data)
 static int
 vidmode_open_site(gamma_server_state_t *state, char *site, gamma_site_state_t *site_out)
 {
+	(void) state;
+
 	/* Open display. */
 	Display *display = XOpenDisplay(site);
 	site_out->data = display;
@@ -100,6 +102,9 @@ static int
 vidmode_open_crtc(gamma_server_state_t *state, gamma_site_state_t *site,
 		  gamma_partition_state_t *partition, size_t crtc, gamma_crtc_state_t *crtc_out)
 {
+	(void) state;
+	(void) crtc;
+
 	Display *display = site->data;
 	int screen = (int)(size_t)(partition->data);
 	int ramp_size;
@@ -126,7 +131,7 @@ vidmode_open_crtc(gamma_server_state_t *state, gamma_site_state_t *site,
 	crtc_out->saved_ramps.blue_size  = (size_t)ramp_size;
 
 	/* Allocate space for saved gamma ramps. */
-	crtc_out->saved_ramps.red = malloc(3 * ramp_size * sizeof(uint16_t));
+	crtc_out->saved_ramps.red = malloc(3 * (size_t)ramp_size * sizeof(uint16_t));
 	if (crtc_out->saved_ramps.red == NULL) {
 		perror("malloc");
 		return -1;
@@ -136,7 +141,7 @@ vidmode_open_crtc(gamma_server_state_t *state, gamma_site_state_t *site,
 	crtc_out->saved_ramps.blue = crtc_out->saved_ramps.green + ramp_size;
 
 	/* Save current gamma ramps so we can restore them at program exit. */
-	r = XF86VidModeGetGammaRamp(display, screen, ramp_size,
+	r = XF86VidModeGetGammaRamp(display, screen, (size_t)ramp_size,
 				    crtc_out->saved_ramps.red,
 				    crtc_out->saved_ramps.green,
 				    crtc_out->saved_ramps.blue);
@@ -152,13 +157,13 @@ vidmode_open_crtc(gamma_server_state_t *state, gamma_site_state_t *site,
 static void
 vidmode_invalid_partition(gamma_site_state_t *site, size_t partition)
 {
-	fprintf(stderr, _("Screen %d does not exist. "),
+	fprintf(stderr, _("Screen %ld does not exist. "),
 		partition);
 	if (site->partitions_available > 1) {
-  		fprintf(stderr, _("Valid screens are [0-%d].\n"),
+		fprintf(stderr, _("Valid screens are [0-%ld].\n"),
 			site->partitions_available - 1);
 	} else {
-		fprintf(stderr, _("Only screen 0 exists, did you mean CRTC %d?\n"),
+		fprintf(stderr, _("Only screen 0 exists, did you mean CRTC %ld?\n"),
 			partition);
 		fprintf(stderr, _("If so, you need to use `randr' instead of `vidmode'.\n"));
 	}

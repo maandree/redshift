@@ -29,23 +29,23 @@
 #define MIN_TEMP   1000
 #define MAX_TEMP  25000
 #ifndef MIN_BRIGHTNESS
-#  define MIN_BRIGHTNESS  0.1
+#  define MIN_BRIGHTNESS  0.1f
 #endif
 #if !defined(MAX_BRIGHTNESS) && !defined(NO_MAX_BRIGHTNESS)
-#  define MAX_BRIGHTNESS  1.0
+#  define MAX_BRIGHTNESS  1.0f
 #endif
 #ifndef MIN_GAMMA
-#  define MIN_GAMMA  0.1
+#  define MIN_GAMMA  0.1f
 #endif
 #if !defined(MAX_GAMMA) && !defined(NO_MAX_GAMMA)
-#  define MAX_GAMMA  10.0
+#  define MAX_GAMMA  10.0f
 #endif
 
 /* Default values for parameters. */
 #define DEFAULT_DAY_TEMP    5500
 #define DEFAULT_NIGHT_TEMP  3500
-#define DEFAULT_BRIGHTNESS   1.0
-#define DEFAULT_GAMMA        1.0
+#define DEFAULT_BRIGHTNESS   1.0f
+#define DEFAULT_GAMMA        1.0f
 
 /* The color temperature when no adjustment is applied. */
 #define NEUTRAL_TEMP  6500

@@ -279,9 +279,9 @@ static const float blackbody_color[] = {
 static void
 interpolate_color(float a, const float *c1, const float *c2, float *c)
 {
-	c[0] = (1.0-a)*c1[0] + a*c2[0];
-	c[1] = (1.0-a)*c1[1] + a*c2[1];
-	c[2] = (1.0-a)*c1[2] + a*c2[2];
+	c[0] = (1.0f-a)*c1[0] + a*c2[0];
+	c[1] = (1.0f-a)*c1[1] + a*c2[1];
+	c[2] = (1.0f-a)*c1[2] + a*c2[2];
 }
 
 static void
@@ -315,7 +315,7 @@ apply_lut(uint16_t *out[3], size_t out_sizes[3], gamma_ramps_t *lut)
 			   this issue cannot possibility be noticed.*/
 			uint16_t y = cfilter[i];
 			y = (float)y * size_ / UINT16_MAX + 0.5f;
-			y = y < 0 ? 0 : (y > size_ ? size_ : y);
+			y = y > size_ ? size_ : y;
 			cfilter[i] = ccalib[y];
 		}
 	}

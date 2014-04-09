@@ -184,6 +184,7 @@ static volatile sig_atomic_t disable = 0;
 static void
 sigexit(int signo)
 {
+	(void) signo;
 	exiting = 1;
 }
 
@@ -191,6 +192,7 @@ sigexit(int signo)
 static void
 sigdisable(int signo)
 {
+	(void) signo;
 	disable = 1;
 }
 
@@ -228,7 +230,7 @@ calculate_interpolated_value(double elevation, float day, float night)
 		/* Transition period: interpolate */
 		float a = (TRANSITION_LOW - elevation) /
 			(TRANSITION_LOW - TRANSITION_HIGH);
-		result = (1.0-a)*night + a*day;
+		result = (1.0f-a)*night + a*day;
 	} else {
 		result = day;
 	}
@@ -308,7 +310,7 @@ print_help(const char *program_name)
 }
 
 static void
-print_method_list()
+print_method_list(void)
 {
 	fputs(_("Available adjustment methods:\n"), stdout);
 	for (int i = 0; gamma_methods[i].name != NULL; i++) {
@@ -323,7 +325,7 @@ print_method_list()
 }
 
 static void
-print_provider_list()
+print_provider_list(void)
 {
 	fputs(_("Available location providers:\n"), stdout);
 	for (int i = 0; location_providers[i].name != NULL; i++) {
@@ -378,7 +380,7 @@ provider_try_start(const location_provider_t *provider,
 
 	/* Set provider options from command line. */
 	const char *manual_keys[] = { "lat", "lon" };
-	int i = 0;
+	size_t i = 0;
 	while (args != NULL) {
 		char *next_arg = strchr(args, ':');
 		if (next_arg != NULL) *(next_arg++) = '\0';
@@ -673,7 +675,7 @@ main(int argc, char *argv[])
 				exit(EXIT_SUCCESS);
 			}
 
-			char *provider_name = NULL;
+			const char *provider_name = NULL;
 
 			/* Don't save the result of strtof(); we simply want
 			   to know if optarg can be parsed as a float. */
@@ -1088,8 +1090,8 @@ main(int argc, char *argv[])
 		}
 
 		/* Use elevation of sun to set color temperature */
-		int temp = (int)calculate_interpolated_value(elevation,
-							     temp_day, temp_night);
+		int temp = calculate_interpolated_value(elevation,
+							temp_day, temp_night);
 		float brightness = calculate_interpolated_value(elevation,
 								brightness_day, brightness_night);
 
@@ -1251,7 +1253,7 @@ main(int argc, char *argv[])
 			double elevation = solar_elevation(now, lat, lon);
 
 			/* Use elevation of sun to set color temperature */
-			int temp = (int)calculate_interpolated_value(elevation,
+			int temp = calculate_interpolated_value(elevation,
 								temp_day, temp_night);
 			float brightness = calculate_interpolated_value(elevation,
 								brightness_day, brightness_night);
@@ -1271,7 +1273,7 @@ main(int argc, char *argv[])
 
 				/* Calculate alpha */
 				adjustment_alpha = (end - start) /
-					(float)short_trans_len;
+					(double)short_trans_len;
 				if (!short_trans_begin) {
 					adjustment_alpha =
 						1.0 - adjustment_alpha;

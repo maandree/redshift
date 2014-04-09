@@ -115,8 +115,8 @@ BOOL EnumDisplayDevices(LPCTSTR lpDevice, DWORD iDevNum, PDISPLAY_DEVICE lpDispl
 
 
 static xcb_connection_t *conn = NULL;
-static int dc_count = 0;
-static int crtc_count = -1;
+static size_t dc_count = 0;
+static ssize_t crtc_count = -1;
 static xcb_randr_crtc_t *crtcs = NULL;
 static xcb_randr_get_screen_resources_current_reply_t *res_reply = NULL;
 
@@ -245,7 +245,7 @@ HDC CreateDC(LPCTSTR lpszDriver, LPCTSTR lpszDevice, void *lpszOutput, void *lpI
 BOOL EnumDisplayDevices(LPCTSTR lpDevice, DWORD iDevNum, PDISPLAY_DEVICE lpDisplayDevice, DWORD dwFlags)
 {
 	(void) dwFlags;
-	int count = crtc_count;
+	size_t count = (size_t)crtc_count;
 	if (lpDevice != NULL) {
 		fprintf(stderr, "lpDevice (argument 1) for EnumDisplayDevices should be NULL");
 		abort();
@@ -255,7 +255,7 @@ BOOL EnumDisplayDevices(LPCTSTR lpDevice, DWORD iDevNum, PDISPLAY_DEVICE lpDispl
 		if (GetDC(NULL) == NULL)
 			return FALSE;
 		dc_count = 0;
-		count = crtc_count;
+		count = (size_t)crtc_count;
 		ReleaseDC(NULL, NULL);
 	}
 	if (iDevNum >= count)
