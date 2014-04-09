@@ -18,6 +18,8 @@
    Copyright (c) 2014  Mattias Andrée <maandree@member.fsf.org>
 */
 
+#include "gamma-vidmode.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -32,9 +34,6 @@
 
 #include <X11/Xlib.h>
 #include <X11/extensions/xf86vmode.h>
-
-#include "gamma-vidmode.h"
-#include "colorramp.h"
 
 
 
@@ -156,11 +155,10 @@ vidmode_invalid_partition(gamma_site_state_t *site, size_t partition)
   		fprintf(stderr, _("Valid screens are [0-%d].\n"),
 			site->partitions_available - 1);
 	} else {
-		fprintf(stderr, _("Only screen 0 exists, did you mean CRTC %d?\n"
-				  "If so, you need to use `randr' instead of `vidmode'.\n"),
+		fprintf(stderr, _("Only screen 0 exists, did you mean CRTC %d?\n"),
 			partition);
+		fprintf(stderr, _("If so, you need to use `randr' instead of `vidmode'.\n"));
 	}
-	fprintf(stderr, "Invalid screen.\n");
 }
 
 static int
