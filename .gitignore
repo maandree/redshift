@@ -1,3 +1,7 @@
+# Hidden and temporary files
+.*
+!.git*
+
 # Backup files
 *~
 \#*\#
