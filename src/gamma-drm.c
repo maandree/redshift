@@ -65,7 +65,19 @@ drm_open_site(gamma_server_state_t *state, char *site, gamma_site_state_t *site_
 	(void) state;
 	(void) site;
 	site_out->data = NULL;
-	site_out->partitions_available = 1; /* FIXME */
+	site_out->partitions_available = 0;
+
+	/* Count the number of available graphics cards. */
+	char pathname[4096];
+	struct stat _attr;
+	while (1) {
+		snprintf(pathname, 4096, DRM_DEV_NAME, DRM_DIR_NAME,
+			 (int)site_out->partitions_available);
+		if (stat(pathname, &_attr))
+			break;
+		site_out->partitions_available++;
+	}
+
 	return 0;
 }
 
