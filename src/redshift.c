@@ -111,7 +111,7 @@ static const gamma_method_t gamma_methods[] = {
 	{
 		"wingdi", 1,
 		(gamma_method_init_func *)w32gdi_init,
-		(gamma_method_start_func *)w32gdi_start
+		(gamma_method_start_func *)w32gdi_start,
 		(gamma_method_print_help_func *)w32gdi_print_help
 	},
 #endif
