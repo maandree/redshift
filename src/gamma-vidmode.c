@@ -70,6 +70,7 @@ vidmode_open_site(gamma_server_state_t *state, char *site, gamma_site_state_t *s
 	if (!r) {
 		fprintf(stderr, _("X request failed: %s\n"),
 			"XF86VidModeQueryVersion");
+		XCloseDisplay(display);
 		return -1;
 	}
 
@@ -79,6 +80,8 @@ vidmode_open_site(gamma_server_state_t *state, char *site, gamma_site_state_t *s
 		fprintf(stderr, _("X request failed: %s\n"),
 			"ScreenCount");
 	}
+
+	return 0;
 }
 
 static int
@@ -89,7 +92,7 @@ vidmode_open_partition(gamma_server_state_t *state, gamma_site_state_t *site,
 	(void) site;
 	(void) partition;
 	partition_out->data = (void *)partition;
-	partition_out->crtcs_available = 0;
+	partition_out->crtcs_available = 1;
 	return 0;
 }
 
@@ -165,8 +168,8 @@ static int
 vidmode_set_ramps(gamma_server_state_t *state, gamma_crtc_state_t *crtc, gamma_ramps_t ramps)
 {
 	int r;
-	r = XF86VidModeSetGammaRamp((Display *)(state->sites[crtc->site_index].data),
-				    crtc->partition, ramps.red_size, ramps.red, ramps.green, ramps.blue);
+	r = XF86VidModeSetGammaRamp((Display *)(state->sites[crtc->site_index].data), crtc->partition,
+				    ramps.red_size, ramps.red, ramps.green, ramps.blue);
 	if (!r) {
 		fprintf(stderr, _("X request failed: %s\n"),
 			"XF86VidModeSetGammaRamp");
@@ -179,12 +182,17 @@ vidmode_set_option(gamma_server_state_t *state, const char *key, const char *val
 {
 	if (strcasecmp(key, "screen") == 0) {
 		ssize_t screen = strcasecmp(value, "all") ? (ssize_t)atoi(value) : -1;
-		if (screen < 0) {
+		if (screen < 0 && strcasecmp(value, "all")) {
 			/* TRANSLATORS: `all' must not be translated. */
 			fprintf(stderr, _("Screen must be `all' or a non-negative integer.\n"));
 			return -1;
 		}
-		state->selections[section].partition = screen;
+		if (section >= 0) {
+			state->selections[section].partition = screen;
+		} else {
+			for (size_t i = 0; i < state->selections_made; i++)
+				state->selections[i].partition = screen;
+		}
 		return 0;
 	}
 	return 1;

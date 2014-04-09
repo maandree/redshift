@@ -97,6 +97,7 @@ drm_open_partition(gamma_server_state_t *state, gamma_site_state_t *site,
 		        membership of the video group is required.
 			It could also be locked by e.g. a display server. */
 		perror("open");
+		free(data);
 		return -1;
 	}
 
@@ -104,6 +105,8 @@ drm_open_partition(gamma_server_state_t *state, gamma_site_state_t *site,
 	data->res = drmModeGetResources(data->fd);
 	if (data->res == NULL) {
 		fprintf(stderr, _("Failed to get DRM mode resources\n"));
+		close(data->fd);
+		free(data);
 		return -1;
 	}
 
@@ -188,21 +191,31 @@ drm_set_option(gamma_server_state_t *state, const char *key, const char *value, 
 {
 	if (strcasecmp(key, "card") == 0) {
 		ssize_t card = strcasecmp(value, "all") ? (ssize_t)atoi(value) : -1;
-		if (card < 0) {
+		if (card < 0 && strcasecmp(value, "all")) {
 			/* TRANSLATORS: `all' must not be translated. */
 			fprintf(stderr, _("Card must be `all' or a non-negative integer.\n"));
 			return -1;
 		}
-		state->selections[section].partition = card;
+		if (section >= 0) {
+			state->selections[section].partition = card;
+		} else {
+			for (size_t i = 0; i < state->selections_made; i++)
+				state->selections[i].partition = card;
+		}
 		return 0;
 	} else if (strcasecmp(key, "crtc") == 0) {
 		ssize_t crtc = strcasecmp(value, "all") ? (ssize_t)atoi(value) : -1;
-		if (crtc < 0) {
+		if (crtc < 0 && strcasecmp(value, "all")) {
 			/* TRANSLATORS: `all' must not be translated. */
 			fprintf(stderr, _("CRTC must be `all' or a non-negative integer.\n"));
 			return -1;
 		}
-		state->selections[section].crtc = crtc;
+		if (section >= 0) {
+			state->selections[section].crtc = crtc;
+		} else {
+			for (size_t i = 0; i < state->selections_made; i++)
+				state->selections[i].crtc = crtc;
+		}
 		return 0;
 	}
 	return 1;

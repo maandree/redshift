@@ -97,7 +97,6 @@ randr_open_site(gamma_server_state_t *state, char *site, gamma_site_state_t *sit
 
 	site_out->data = connection;
 
-
 	/* Get the number of available screens. */
 	const xcb_setup_t *setup = xcb_get_setup(connection);
 	xcb_screen_iterator_t iter = xcb_setup_roots_iterator(setup);
@@ -117,6 +116,7 @@ randr_open_partition(gamma_server_state_t *state, gamma_site_state_t *site,
 		perror("malloc");
 		return -1;
 	}
+	data->crtcs = NULL;
 
 	xcb_connection_t *connection = site->data;
 
@@ -136,6 +136,7 @@ randr_open_partition(gamma_server_state_t *state, gamma_site_state_t *site,
 	if (screen == NULL) {
 		fprintf(stderr, _("Screen %i could not be found.\n"),
 			partition);
+		free(data);
 		return -1;
 	}
 
@@ -155,6 +156,7 @@ randr_open_partition(gamma_server_state_t *state, gamma_site_state_t *site,
 		fprintf(stderr, _("`%s' returned error %d\n"),
 			"RANDR Get Screen Resources Current",
 			error->error_code);
+		free(data);
 		return -1;
 	}
 
@@ -163,12 +165,14 @@ randr_open_partition(gamma_server_state_t *state, gamma_site_state_t *site,
 	xcb_randr_crtc_t *crtcs =
 		xcb_randr_get_screen_resources_current_crtcs(res_reply);
 
-	partition_out->crtcs = malloc(res_reply->num_crtcs * sizeof(xcb_randr_crtc_t));
-	if (partition_out->crtcs == NULL) {
+	data->crtcs = malloc(res_reply->num_crtcs * sizeof(xcb_randr_crtc_t));
+	if (data->crtcs == NULL) {
 		perror("malloc");
+		free(res_reply);
+		free(data);
 		return -1;
 	}
-	memcpy(partition_out->crtcs, crtcs, res_reply->num_crtcs * sizeof(xcb_randr_crtc_t));
+	memcpy(data->crtcs, crtcs, res_reply->num_crtcs * sizeof(xcb_randr_crtc_t));
 
 	free(res_reply);
 	return 0;
@@ -215,14 +219,13 @@ randr_open_crtc(gamma_server_state_t *state, gamma_site_state_t *site,
 	crtc_out->saved_ramps.blue_size  = (size_t)ramp_size;
 
 	/* Allocate space for saved gamma ramps. */
-	crtc_out->saved_ramps.red = malloc(3 * ramp_size * sizeof(uint16_t));
+	crtc_out->saved_ramps.red   = malloc(3 * ramp_size * sizeof(uint16_t));
+	crtc_out->saved_ramps.green = crtc_out->saved_ramps.red   + ramp_size;
+	crtc_out->saved_ramps.blue  = crtc_out->saved_ramps.green + ramp_size;
 	if (crtc_out->saved_ramps.red == NULL) {
 		perror("malloc");
 		return -1;
 	}
-
-	crtc_out->saved_ramps.green = crtc_out->saved_ramps.red + ramp_size;
-	crtc_out->saved_ramps.blue = crtc_out->saved_ramps.green + ramp_size;
 
 	/* Request current gamma ramps. */
 	xcb_randr_get_crtc_gamma_cookie_t gamma_get_cookie =
@@ -248,6 +251,7 @@ randr_open_crtc(gamma_server_state_t *state, gamma_site_state_t *site,
 	memcpy(crtc_out->saved_ramps.blue,  gamma_b, ramp_size * sizeof(uint16_t));
 
 	free(gamma_get_reply);
+	return 0;
 }
 
 static void
@@ -290,21 +294,31 @@ randr_set_option(gamma_server_state_t *state, const char *key, const char *value
 {
 	if (strcasecmp(key, "screen") == 0) {
 		ssize_t screen = strcasecmp(value, "all") ? (ssize_t)atoi(value) : -1;
-		if (screen < 0) {
+		if (screen < 0 && strcasecmp(value, "all")) {
 			/* TRANSLATORS: `all' must not be translated. */
 			fprintf(stderr, _("Screen must be `all' or a non-negative integer.\n"));
 			return -1;
 		}
-		state->selections[section].partition = screen;
+		if (section >= 0) {
+			state->selections[section].partition = screen;
+		} else {
+			for (size_t i = 0; i < state->selections_made; i++)
+				state->selections[i].partition = screen;
+		}
 		return 0;
 	} else if (strcasecmp(key, "crtc") == 0) {
 		ssize_t crtc = strcasecmp(value, "all") ? (ssize_t)atoi(value) : -1;
-		if (crtc < 0) {
+		if (crtc < 0 && strcasecmp(value, "all")) {
 			/* TRANSLATORS: `all' must not be translated. */
 			fprintf(stderr, _("CRTC must be `all' or a non-negative integer.\n"));
 			return -1;
 		}
-		state->selections[section].crtc = crtc;
+		if (section >= 0) {
+			state->selections[section].crtc = crtc;
+		} else {
+			for (size_t i = 0; i < state->selections_made; i++)
+				state->selections[i].crtc = crtc;
+		}
 		return 0;
 	}
 	return 1;

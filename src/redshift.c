@@ -642,9 +642,17 @@ main(int argc, char *argv[])
 		case 'c':
 			if (config_filepath != NULL) free(config_filepath);
 			config_filepath = strdup(optarg);
+			if (config_filepath == NULL) {
+				perror("strdup");
+				abort();
+			}
 			break;
 		case 'g':
 			gamma = strdup(optarg);
+			if (gamma == NULL) {
+				perror("strdup");
+				abort();
+			}
 			r = parse_gamma_string(optarg, gamma_);
 			if (r < 0) {
 				fputs(_("Malformed gamma argument.\n"),
@@ -836,6 +844,10 @@ main(int argc, char *argv[])
 			} else if (strcasecmp(setting->name, "gamma") == 0) {
 				if (gamma == NULL) {
 					gamma = strdup(setting->value);
+					if (gamma == NULL) {
+						perror("strdup");
+						abort();
+					}
 				}
 			} else if (strcasecmp(setting->name,
 					      "adjustment-method") == 0) {
