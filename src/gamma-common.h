@@ -36,6 +36,7 @@ struct gamma_site_state_t;
 struct gamma_selection_state_t;
 struct gamma_server_state_t;
 struct gamma_iterator_t;
+struct gamma_crtc_selection_t;
 
 /* Typedef:s of the structures. */
 typedef struct gamma_crtc_state_t      gamma_crtc_state_t;
@@ -44,6 +45,7 @@ typedef struct gamma_site_state_t      gamma_site_state_t;
 typedef struct gamma_selection_state_t gamma_selection_state_t;
 typedef struct gamma_server_state_t    gamma_server_state_t;
 typedef struct gamma_iterator_t        gamma_iterator_t;
+typedef struct gamma_crtc_selection_t  gamma_crtc_selection_t;
 
 
 
@@ -158,6 +160,13 @@ struct gamma_iterator_t {
 	gamma_server_state_t *state;
 };
 
+/* CRTC selection. */
+struct gamma_crtc_selection_t {
+	ssize_t site;
+	ssize_t partition;
+	ssize_t crtc;
+};
+
 
 
 /* Initialise the adjustment method common parts of a state, 
@@ -180,6 +189,10 @@ gamma_iterator_t gamma_iterator(gamma_server_state_t *state);
 int gamma_iterator_next(gamma_iterator_t *iterator);
 
 
+/* Find the index of a site or the index for a new site. */
+size_t gamma_find_site(gamma_server_state_t *state, char *site);
+
+
 /* Resolve selections. */
 int gamma_resolve_selections(gamma_server_state_t *state);
 
@@ -196,9 +209,14 @@ int gamma_set_option(gamma_server_state_t *state, const char *key, const char *v
 
 
 /* Methods for updating adjustments on all CRTC:s. */
-void gamma_update_gamma(gamma_server_state_t *state, float gamma);
-void gamma_update_brightness(gamma_server_state_t *state, float brightness);
-void gamma_update_temperature(gamma_server_state_t *state, float temperature);
+void gamma_update_all_gamma(gamma_server_state_t *state, float gamma);
+void gamma_update_all_brightness(gamma_server_state_t *state, float brightness);
+void gamma_update_all_temperature(gamma_server_state_t *state, float temperature);
+
+/* Methods for updating adjustments on selected CRTC:s. */
+void gamma_update_gamma(gamma_server_state_t *state, gamma_crtc_selection_t crtcs, float gamma);
+void gamma_update_brightness(gamma_server_state_t *state, gamma_crtc_selection_t crtcs, float brightness);
+void gamma_update_temperature(gamma_server_state_t *state, gamma_crtc_selection_t crtcs, float temperature);
 
 
 /* A gamma string contains either one floating point value,
