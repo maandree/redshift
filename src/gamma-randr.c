@@ -63,12 +63,11 @@ static int
 randr_open_site(gamma_server_state_t *state, char *site, gamma_site_state_t *site_out)
 {
 	(void) state;
-	(void) site;
 
 	xcb_generic_error_t *error;
 
 	/* Open X server connection */
-	xcb_connection_t *connection = xcb_connect(NULL, NULL);
+	xcb_connection_t *connection = xcb_connect(site, NULL);
 
 	/* Query RandR version */
 	xcb_randr_query_version_cookie_t ver_cookie =
@@ -325,8 +324,25 @@ randr_set_option(gamma_server_state_t *state, const char *key, const char *value
 				state->selections[i].crtc = crtc;
 		}
 		return 0;
+	} else if (strcasecmp(key, "display") == 0) {
+		if (section >= 0) {
+			state->selections[section].site = strdup(value);
+			if (state->selections[section].site == NULL)
+				goto strdup_fail;
+		} else {
+			for (size_t i = 0; i < state->selections_made; i++) {
+				state->selections[i].site = strdup(value);
+				if (state->selections[i].site == NULL)
+					goto strdup_fail;
+			}
+		}
+		return 0;
 	}
 	return 1;
+
+strdup_fail:
+	perror("strdup");
+	return -1;
 }
 
 
@@ -364,7 +380,8 @@ randr_print_help(FILE *f)
 
 	/* TRANSLATORS: RANDR help output
 	   left column must not be translated */
-	fputs(_("  screen=N\tX screen to apply adjustments to\n"
-		"  crtc=N\tCRTC to apply adjustments to\n"), f);
+	fputs(_("  crtc=N\tCRTC to apply adjustments to\n"
+		"  screen=N\tX screen to apply adjustments to\n"
+		"  display=NAME\tX display to apply adjustments to\n"), f);
 	fputs("\n", f);
 }

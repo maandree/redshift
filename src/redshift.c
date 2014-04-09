@@ -382,7 +382,7 @@ provider_try_start(const location_provider_t *provider,
 	const char *manual_keys[] = { "lat", "lon" };
 	size_t i = 0;
 	while (args != NULL) {
-		char *next_arg = strchr(args, ':');
+		char *next_arg = strchr(args, ',');
 		if (next_arg != NULL) *(next_arg++) = '\0';
 
 		const char *key = args;
@@ -496,7 +496,7 @@ method_try_start(const gamma_method_t *method,
 
 	/* Set method options from command line. */
 	while (args != NULL) {
-		char *next_arg = strchr(args, ':');
+		char *next_arg = strchr(args, ',');
 		if (next_arg != NULL) *(next_arg++) = '\0';
 
 		const char *key = args;
@@ -682,13 +682,13 @@ main(int argc, char *argv[])
 			errno = 0;
 			char *end;
 			strtof(optarg, &end);
-			if (errno == 0 && *end == ':') {
+			if (errno == 0 && *end == ',') {
 				/* Use instead as arguments to `manual'. */
 				provider_name = "manual";
 				provider_args = optarg;
 			} else {
 				/* Split off provider arguments. */
-				s = strchr(optarg, ':');
+				s = strchr(optarg, ',');
 				if (s != NULL) {
 					*(s++) = '\0';
 					provider_args = s;
@@ -720,7 +720,7 @@ main(int argc, char *argv[])
 			}
 
 			/* Split off method arguments. */
-			s = strchr(optarg, ':');
+			s = strchr(optarg, ',');
 			if (s != NULL) {
 				*(s++) = '\0';
 				method_args = s;
