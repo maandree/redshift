@@ -15,6 +15,7 @@
    along with Redshift.  If not, see <http://www.gnu.org/licenses/>.
 
    Copyright (c) 2013  Jon Lund Steffensen <jonlst@gmail.com>
+   Copyright (c) 2014  Mattias Andrée <maandree@member.fsf.org>
 */
 
 #ifdef HAVE_CONFIG_H
@@ -199,19 +200,6 @@ static const location_provider_t location_providers[] = {
 	},
 	{ NULL }
 };
-
-/* Bounds for parameters. */
-#define MIN_LAT   -90.0
-#define MAX_LAT    90.0
-#define MIN_LON  -180.0
-#define MAX_LON   180.0
-
-/* Angular elevation of the sun at which the color temperature
-   transition period starts and ends (in degress).
-   Transition during twilight, and while the sun is lower than
-   3.0 degrees above the horizon. */
-#define TRANSITION_LOW     SOLAR_CIVIL_TWILIGHT_ELEV
-#define TRANSITION_HIGH    3.0
 
 /* Program modes. */
 typedef enum {
@@ -481,7 +469,8 @@ provider_try_start(const location_provider_t *provider,
 static int
 method_try_start(const gamma_method_t *method,
 		 gamma_state_t *state,
-		 config_ini_state_t *config, char *args)
+		 config_ini_state_t *config, char *args,
+		 char *gamma, int preserve_calibrations)
 {
 	int r;
 
@@ -492,28 +481,51 @@ method_try_start(const gamma_method_t *method,
 		return -1;
 	}
 
-	/* Set method options from config file. */
-	config_ini_section_t *section =
-		config_ini_get_section(config, method->name);
-	if (section != NULL) {
-		config_ini_setting_t *setting = section->settings;
-		while (setting != NULL) {
-			r = method->set_option(state, setting->name,
-						 setting->value);
-			if (r < 0) {
-				method->free(state);
-				fprintf(stderr, _("Failed to set %s"
-						  " option.\n"),
-					method->name);
-				/* TRANSLATORS: `help' must not be
-				   translated. */
-				fprintf(stderr, _("Try `-m %s:help' for more"
-						  " information.\n"),
-					method->name);
-				return -1;
-			}
-			setting = setting->next;
+	/* Set default gamma. */
+	if (gamma != NULL) {
+		r = method->set_option(state, "gamma", gamma, 0);
+		free(gamma);
+		if (r < 0) {
+			method->free(state);
+			return -1;
 		}
+	}
+
+	/* Set default preserve-calibrations settings. */
+	r = method->set_option(state, "preserve-calibrations",
+			       preserve_calibrations ? "1" : "0", 0);
+	if (r < 0) {
+		method->free(state);
+		return -1;
+	}
+
+	/* Set method options from config file. */
+	config_ini_section_t **sections =
+		config_ini_get_sections(config, method->name);
+	if (sections != NULL) {
+		int section_i = 0;
+		while (sections[section_i] != NULL) {
+			config_ini_setting_t *setting = sections[section_i]->settings;
+			while (setting != NULL) {
+				r = method->set_option(state, setting->name,
+						       setting->value, section_i + 1);
+				if (r < 0) {
+					method->free(state);
+					fprintf(stderr, _("Failed to set %s option.\n"),
+						method->name);
+					/* TRANSLATORS: `help' must not be translated. */
+					fprintf(stderr, _("Try `-m %s:help' for more information.\n"),
+						method->name);
+					return -1;
+				}
+				setting = setting->next;
+			}
+			section_i++;
+		}
+		free(sections);
+	} else {
+		method->free(state);
+		return -1;
 	}
 
 	/* Set method options from command line. */
@@ -531,7 +543,7 @@ method_try_start(const gamma_method_t *method,
 			*(value++) = '\0';
 		}
 
-		r = method->set_option(state, key, value);
+		r = method->set_option(state, key, value, -1);
 		if (r < 0) {
 			method->free(state);
 			fprintf(stderr, _("Failed to set %s option.\n"),
@@ -625,7 +637,7 @@ main(int argc, char *argv[])
 	int temp_set = -1;
 	int temp_day = -1;
 	int temp_night = -1;
-	float gamma[3] = { NAN, NAN, NAN };
+	char *gamma = NULL;
 	float brightness_day = NAN;
 	float brightness_night = NAN;
 
@@ -650,6 +662,7 @@ main(int argc, char *argv[])
 	/* Parse command line arguments. */
 	int opt;
 	while ((opt = getopt(argc, argv, "b:c:g:hl:m:oO:pPrt:vVx")) != -1) {
+		float gamma_[3];
 		switch (opt) {
 		case 'b':
 			parse_brightness_string(optarg, &brightness_day, &brightness_night);
@@ -659,7 +672,8 @@ main(int argc, char *argv[])
 			config_filepath = strdup(optarg);
 			break;
 		case 'g':
-			r = parse_gamma_string(optarg, gamma);
+			gamma = strdup(optarg);
+			r = parse_gamma_string(optarg, gamma_);
 			if (r < 0) {
 				fputs(_("Malformed gamma argument.\n"),
 				      stderr);
@@ -848,15 +862,8 @@ main(int argc, char *argv[])
 					brightness_night = atof(setting->value);
 				}
 			} else if (strcasecmp(setting->name, "gamma") == 0) {
-				if (isnan(gamma[0])) {
-					r = parse_gamma_string(setting->value,
-							       gamma);
-					if (r < 0) {
-						fputs(_("Malformed gamma"
-							" setting.\n"),
-						      stderr);
-						exit(EXIT_FAILURE);
-					}
+				if (gamma == NULL) {
+					gamma = strdup(setting->value);
 				}
 			} else if (strcasecmp(setting->name,
 					      "adjustment-method") == 0) {
@@ -901,7 +908,6 @@ main(int argc, char *argv[])
 	if (temp_night < 0) temp_night = DEFAULT_NIGHT_TEMP;
 	if (isnan(brightness_day)) brightness_day = DEFAULT_BRIGHTNESS;
 	if (isnan(brightness_night)) brightness_night = DEFAULT_BRIGHTNESS;
-	if (isnan(gamma[0])) gamma[0] = gamma[1] = gamma[2] = DEFAULT_GAMMA;
 	if (transition < 0) transition = 1;
 	if (preserve_calibrations < 0) preserve_calibrations = 0;
 
@@ -1029,20 +1035,10 @@ main(int argc, char *argv[])
 		printf(_("Brightness: %.2f:%.2f\n"), brightness_day, brightness_night);
 	}
 
-	/* Gamma */
-	if (gamma[0] < MIN_GAMMA || gamma[0] > MAX_GAMMA ||
-	    gamma[1] < MIN_GAMMA || gamma[1] > MAX_GAMMA ||
-	    gamma[2] < MIN_GAMMA || gamma[2] > MAX_GAMMA) {
-		fprintf(stderr,
-			_("Gamma value must be between %.1f and %.1f.\n"),
-			MIN_GAMMA, MAX_GAMMA);
-		exit(EXIT_FAILURE);
-	}
-
-	if (verbose) {
+	/*if (verbose) {   TODO gamma is now set on outputs individually
 		printf(_("Gamma: %.3f, %.3f, %.3f\n"),
 		       gamma[0], gamma[1], gamma[2]);
-	}
+	}*/
 
 	/* Initialize gamma adjustment method. If method is NULL
 	   try all methods until one that works is found. */
@@ -1053,15 +1049,19 @@ main(int argc, char *argv[])
 		if (method != NULL) {
 			/* Use method specified on command line. */
 			r = method_try_start(method, &state, &config_state,
-					     method_args);
-			if (r < 0) exit(EXIT_FAILURE);
+					     method_args, gamma, preserve_calibrations);
+			if (r < 0) {
+				config_ini_free(&config_state);
+				exit(EXIT_FAILURE);
+			}
 		} else {
 			/* Try all methods, use the first that works. */
 			for (int i = 0; gamma_methods[i].name != NULL; i++) {
 				const gamma_method_t *m = &gamma_methods[i];
 				if (!m->autostart) continue;
 
-				r = method_try_start(m, &state, &config_state, NULL);
+				r = method_try_start(m, &state, &config_state, NULL,
+						     gamma, preserve_calibrations);
 				if (r < 0) {
 					fputs(_("Trying next method...\n"), stderr);
 					continue;
@@ -1120,7 +1120,7 @@ main(int argc, char *argv[])
 		}
 
 		/* Adjust temperature */
-		r = method->set_temperature(&state, temp, brightness, gamma);
+		r = method->set_temperature(&state, temp, brightness);
 		if (r < 0) {
 			fputs(_("Temperature adjustment failed.\n"), stderr);
 			method->free(&state);
@@ -1133,7 +1133,7 @@ main(int argc, char *argv[])
 		if (verbose) printf(_("Color temperature: %uK\n"), temp_set);
 
 		/* Adjust temperature */
-		r = method->set_temperature(&state, temp_set, brightness_day, gamma);
+		r = method->set_temperature(&state, temp_set, brightness_day);
 		if (r < 0) {
 			fputs(_("Temperature adjustment failed.\n"), stderr);
 			method->free(&state);
@@ -1145,7 +1145,7 @@ main(int argc, char *argv[])
 	case PROGRAM_MODE_RESET:
 	{
 		/* Reset screen */
-		r = method->set_temperature(&state, NEUTRAL_TEMP, 1.0, gamma);
+		r = method->set_temperature(&state, NEUTRAL_TEMP, 1.0);
 		if (r < 0) {
 			fputs(_("Temperature adjustment failed.\n"), stderr);
 			method->free(&state);
@@ -1326,8 +1326,7 @@ main(int argc, char *argv[])
 			/* Adjust temperature */
 			if (!disabled || short_trans) {
 				r = method->set_temperature(&state,
-							    temp, brightness,
-							    gamma);
+							    temp, brightness);
 				if (r < 0) {
 					fputs(_("Temperature adjustment"
 						" failed.\n"), stderr);

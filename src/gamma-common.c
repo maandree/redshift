@@ -431,7 +431,7 @@ gamma_update(gamma_server_state_t *state)
 
 /* Parse and apply an option. */
 int
-gamma_set_option(gamma_server_state_t *state, const char *key, const char *value, int section)
+gamma_set_option(gamma_server_state_t *state, const char *key, const char *value, ssize_t section)
 {
 	int r;
 
@@ -456,7 +456,21 @@ gamma_set_option(gamma_server_state_t *state, const char *key, const char *value
 		state->selections_made += 1;
 	}
 
-	if (strcasecmp(key, "gamma") == 0) {
+	if (strcasecmp(key, "preserve-calibrations") == 0) {
+		int int_value = atoi(value);
+		if (int_value == 0 || int_value == 1) {
+			/* TRANSLATORS: `preserve-calibrations' must not be translated. */
+			fprintf(stderr,
+				_("The value for preserve-calibrations must be either `1' or `0'.\n"));
+			return -1;
+		}
+		if (section >= 0) {
+			state->selections[section].preserve_calibrations = int_value;
+		} else {
+			for (size_t i = 0; i < state->selections_made; i++)
+				state->selections[i].preserve_calibrations = int_value;
+		}
+	} else if (strcasecmp(key, "gamma") == 0) {
 		float gamma[3];
 		if (parse_gamma_string(value, gamma) < 0) {
 			fputs(_("Malformed gamma setting.\n"),
@@ -482,9 +496,17 @@ gamma_set_option(gamma_server_state_t *state, const char *key, const char *value
 			return -1;
 		}
 #endif
-		state->selections[section].settings.gamma_correction[0] = gamma[0];
-		state->selections[section].settings.gamma_correction[1] = gamma[1];
-		state->selections[section].settings.gamma_correction[2] = gamma[2];
+		if (section >= 0) {
+			state->selections[section].settings.gamma_correction[0] = gamma[0];
+			state->selections[section].settings.gamma_correction[1] = gamma[1];
+			state->selections[section].settings.gamma_correction[2] = gamma[2];
+		} else {
+			for (size_t i = 0; i < state->selections_made; i++) {
+				state->selections[i].settings.gamma_correction[0] = gamma[0];
+				state->selections[i].settings.gamma_correction[1] = gamma[1];
+				state->selections[i].settings.gamma_correction[2] = gamma[2];
+			}
+		}
 	} else {
 		r = state->set_option(state, key, value, section);
 		if (r <= 0)

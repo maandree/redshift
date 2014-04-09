@@ -207,7 +207,7 @@ void gamma_update(gamma_server_state_t *state);
 
 
 /* Parse and apply an option. */
-int gamma_set_option(gamma_server_state_t *state, const char *key, const char *value, int section);
+int gamma_set_option(gamma_server_state_t *state, const char *key, const char *value, ssize_t section);
 
 
 /* Methods for updating adjustments on all CRTC:s. */
