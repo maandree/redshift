@@ -201,7 +201,7 @@ randr_open_crtc(gamma_server_state_t *state, gamma_site_state_t *site,
 		return -1;
 	}
 
-	size_t ramp_size = gamma_size_reply->size;
+	ssize_t ramp_size = gamma_size_reply->size;
 	free(gamma_size_reply);
 
 	if (ramp_size < 2) {
@@ -210,9 +210,9 @@ randr_open_crtc(gamma_server_state_t *state, gamma_site_state_t *site,
 		return -1;
 	}
 
-	crtc_out->saved_ramps.red_size   = ramp_size;
-	crtc_out->saved_ramps.green_size = ramp_size;
-	crtc_out->saved_ramps.blue_size  = ramp_size;
+	crtc_out->saved_ramps.red_size   = (size_t)ramp_size;
+	crtc_out->saved_ramps.green_size = (size_t)ramp_size;
+	crtc_out->saved_ramps.blue_size  = (size_t)ramp_size;
 
 	/* Allocate space for saved gamma ramps. */
 	crtc_out->saved_ramps.red = malloc(3 * ramp_size * sizeof(uint16_t));
