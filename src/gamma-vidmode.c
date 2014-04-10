@@ -155,7 +155,7 @@ vidmode_open_crtc(gamma_server_state_t *state, gamma_site_state_t *site,
 }
 
 static void
-vidmode_invalid_partition(gamma_site_state_t *site, size_t partition)
+vidmode_invalid_partition(const gamma_site_state_t *site, size_t partition)
 {
 	fprintf(stderr, _("Screen %ld does not exist. "),
 		partition);

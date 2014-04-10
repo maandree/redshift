@@ -237,7 +237,7 @@ next_partition:
 
 /* Find the index of a site or the index for a new site. */
 size_t
-gamma_find_site(gamma_server_state_t *state, char *site)
+gamma_find_site(const gamma_server_state_t *state, const char *site)
 {
 	size_t site_index;
 

@@ -63,7 +63,7 @@ typedef int gamma_open_crtc_func(gamma_server_state_t *state,
 				 gamma_partition_state_t *partition,
 				 size_t crtc, gamma_crtc_state_t *crtc_out);
 
-typedef void gamma_invalid_partition_func(gamma_site_state_t *site, size_t partition);
+typedef void gamma_invalid_partition_func(const gamma_site_state_t *site, size_t partition);
 
 typedef int gamma_set_ramps_func(gamma_server_state_t *state, gamma_crtc_state_t *crtc, gamma_ramps_t ramps);
 
@@ -193,7 +193,7 @@ int gamma_iterator_next(gamma_iterator_t *iterator);
 
 
 /* Find the index of a site or the index for a new site. */
-size_t gamma_find_site(gamma_server_state_t *state, char *site);
+size_t gamma_find_site(const gamma_server_state_t *state, const char *site);
 
 
 /* Resolve selections. */
