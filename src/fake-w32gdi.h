@@ -44,7 +44,7 @@ int ReleaseDC(HWND hWnd, HDC hDC);
 
 
 /* http://msdn.microsoft.com/en-us/library/windows/desktop/dd144877(v=vs.85).aspx */
-int GetDeviceCaps(HDC hDC, int nIndex);
+int GetDeviceCaps(HDC hDC, int nIndex) __attribute__((const));
 #define COLORMGMTCAPS 1
 #define CM_GAMMA_RAMP 1
 
