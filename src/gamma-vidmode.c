@@ -228,6 +228,7 @@ vidmode_init(gamma_server_state_t *state)
 	r = gamma_init(state);
 	if (r != 0) return r;
 
+	state->selections->site    = getenv("DISPLAY") ? strdup(getenv("DISPLAY")) : NULL;
 	state->free_site_data      = vidmode_free_site;
 	state->free_partition_data = vidmode_free_partition;
 	state->open_site           = vidmode_open_site;
@@ -236,6 +237,11 @@ vidmode_init(gamma_server_state_t *state)
 	state->invalid_partition   = vidmode_invalid_partition;
 	state->set_ramps           = vidmode_set_ramps;
 	state->set_option          = vidmode_set_option;
+
+	if (getenv("DISPLAY") != NULL && state->selections->site == NULL) {
+		perror("strdup");
+		return -1;
+	}
 
 	return 0;
 }
