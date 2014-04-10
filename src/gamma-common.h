@@ -193,7 +193,7 @@ int gamma_iterator_next(gamma_iterator_t *iterator);
 
 
 /* Find the index of a site or the index for a new site. */
-size_t gamma_find_site(const gamma_server_state_t *state, const char *site);
+size_t gamma_find_site(const gamma_server_state_t *state, const char *site) __attribute__((pure));
 
 
 /* Resolve selections. */
