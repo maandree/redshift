@@ -1021,11 +1021,6 @@ main(int argc, char *argv[])
 		printf(_("Brightness: %.2f:%.2f\n"), brightness_day, brightness_night);
 	}
 
-	/*if (verbose) {   TODO gamma is now set on outputs individually
-		printf(_("Gamma: %.3f, %.3f, %.3f\n"),
-		       gamma[0], gamma[1], gamma[2]);
-	}*/
-
 	/* Initialize gamma adjustment method. If method is NULL
 	   try all methods until one that works is found. */
 	gamma_server_state_t state;
