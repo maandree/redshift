@@ -348,7 +348,7 @@ colorramp_fill(gamma_ramps_t out_ramps, gamma_settings_t adjustments)
 			for (int c = 0; c < 3; c++) {
 				uint16_t *cfilter = filter[c];
 				size_t gamma_size_ = gamma_sizes[c] - 1;
-				for (size_t i = 0; i <= gamma_size_; i++)
+				for (size_t i = 0; i < gamma_sizes[c]; i++)
 					cfilter[i] = (float)i / gamma_size_ * UINT16_MAX;
 			}
 			apply_lut(filter, gamma_sizes, adjustments.lut_pre);
