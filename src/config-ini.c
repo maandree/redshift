@@ -28,7 +28,6 @@
 #include <unistd.h>
 #ifndef _WIN32
 # include <pwd.h>
-#else
 # include <limits.h>
 #endif
 
