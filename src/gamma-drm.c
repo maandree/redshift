@@ -43,6 +43,14 @@
 
 
 int
+drm_auto()
+{
+#define testenv(VAR) (getenv(VAR) && *getenv(VAR))
+	return !testenv("DISPLAY") && !testenv("WAYLAND_DISPLAY");
+#undef tesstenv
+}
+
+int
 drm_init(drm_state_t *state)
 {
 	/* Initialize state. */

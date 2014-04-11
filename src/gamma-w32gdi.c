@@ -40,6 +40,12 @@
 
 
 int
+w32gdi_auto()
+{
+	return 1;
+}
+
+int
 w32gdi_init(w32gdi_state_t *state)
 {
 	state->saved_ramps = NULL;

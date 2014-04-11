@@ -33,6 +33,8 @@ typedef struct {
 } vidmode_state_t;
 
 
+int vidmode_auto(void);
+
 int vidmode_init(vidmode_state_t *state);
 int vidmode_start(vidmode_state_t *state);
 void vidmode_free(vidmode_state_t *state);

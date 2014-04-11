@@ -37,6 +37,12 @@
 
 
 int
+vidmode_auto()
+{
+	return getenv("DISPLAY") && *getenv("DISPLAY");
+}
+
+int
 vidmode_init(vidmode_state_t *state)
 {
 	state->screen_num = -1;

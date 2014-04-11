@@ -23,6 +23,8 @@
 #include "redshift.h"
 
 
+int gamma_dummy_auto(void);
+
 int gamma_dummy_init(void *state);
 int gamma_dummy_start(void *state);
 void gamma_dummy_free(void *state);
