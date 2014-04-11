@@ -123,6 +123,7 @@ drm_open_partition(gamma_server_state_t *state, gamma_site_state_t *site,
 				   (attr.st_gid == getegid() && __test(S_IRGRP, S_IWGRP)) ||
 				   __test(S_IROTH, S_IWOTH)) {
 				fprintf(stderr, _("Failed to access the graphics card.\n"));
+				fprintf(stderr, _("Perhaps it is locked.\n"));
 			} else if (attr.st_gid == 0 /* root group */ || __test(S_IRGRP, S_IWGRP)) {
 				fprintf(stderr,
 					_("It appears that your system administrator have\n"
@@ -253,12 +254,36 @@ static int
 drm_set_ramps(gamma_server_state_t *state, gamma_crtc_state_t *crtc, gamma_ramps_t ramps)
 {
 	drm_card_data_t *card_data = state->sites[crtc->site_index].partitions[crtc->partition].data;
-	drmModeCrtcSetGamma(card_data->fd, (uint32_t)(long)(crtc->data),
-			    ramps.red_size, ramps.red, ramps.green, ramps.blue);
-
-	/* Errors must be ignored, because we do not have
-	   permission to do this will a display server is active. */
-	/* TODO: ...well with could check for other errors than permission errors.*/
+	int r;
+	r = drmModeCrtcSetGamma(card_data->fd, (uint32_t)(long)(crtc->data),
+				ramps.red_size, ramps.red, ramps.green, ramps.blue);
+	if (r) {
+		switch (errno) {
+		case EACCES:
+		case EAGAIN:
+		case EIO:
+			/* Permission denied errors must be ignored, because we do not
+			   have permission to do this while a display server is active.
+			   We are also checking for some other error codes just in case. */
+		case EBUSY:
+		case EINPROGRESS:
+			/* It is hard to find documentation for DRM (in fact all of this is
+			   just based on the functions names and some testing,) perhaps we
+			   could get this if we are updating to fast. */
+			break;
+		case EBADF:
+		case ENODEV:
+		case ENXIO:
+			/* XXX: I have not actually tested removing my graphics card or,
+				monitor but I imagine either of these is what would happen. */
+			fprintf(stderr,
+				_("Please do not unplug your monitors or remove graphics cards.\n"));
+			return -1;
+		default:
+			perror("drmModeCrtcSetGamma");
+			return -1;
+		}
+	}
 	return 0;
 }
 
