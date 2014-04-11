@@ -10,6 +10,10 @@
 *.o
 *.ko
 
+# Auxiliary files
+*.gch
+*.su
+
 # Libraries
 *.lib
 *.a
