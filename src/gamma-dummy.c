@@ -31,7 +31,7 @@
 int
 gamma_dummy_auto()
 {
-	return 1;
+	return 0;
 }
 
 int

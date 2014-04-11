@@ -40,10 +40,7 @@ typedef int gamma_method_set_temperature_func(void *state, int temp,
 typedef struct {
 	char *name;
 
-	/* If true, this method will be tried if none is explicitly chosen. */
-	int autostart;
-	/* Checked only if autostart is false, if evaluated to true,
-	   this method will be tried if none is explicitly chosen. */
+	/* If evaluated to true, this method will be tried if none is explicitly chosen. */
 	gamma_method_auto_func *autostart_test;
 
 	/* Initialize state. Options can be set between init and start. */
