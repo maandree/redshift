@@ -27,6 +27,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <limits.h>
+#include <errno.h>
+#include <grp.h>
 
 #ifdef ENABLE_NLS
 # include <libintl.h>
@@ -106,10 +108,62 @@ drm_open_partition(gamma_server_state_t *state, gamma_site_state_t *site,
 
 	data->fd = open(pathname, O_RDWR | O_CLOEXEC);
 	if (data->fd < 0) {
-		/* TODO Check if access permissions, normally root or
-		        membership of the video group is required.
-			It could also be locked by e.g. a display server. */
-		perror("open");
+		if ((errno == ENXIO) || (errno == ENODEV)) {
+			goto card_removed;
+		} else if (errno == EACCES) {
+			struct stat attr;
+			int r;
+			r = stat(pathname, &attr);
+			if (r != 0) {
+				if (errno == EACCES)
+			  		goto card_removed;
+				perror("stat");
+#define __test(R, W) ((attr.st_mode & (R | W)) == (R | W))
+			} else if ((attr.st_uid == geteuid() && __test(S_IRUSR, S_IWUSR)) ||
+				   (attr.st_gid == getegid() && __test(S_IRGRP, S_IWGRP)) ||
+				   __test(S_IROTH, S_IWOTH)) {
+				fprintf(stderr, _("Failed to access the graphics card.\n"));
+			} else if (attr.st_gid == 0 /* root group */ || __test(S_IRGRP, S_IWGRP)) {
+				fprintf(stderr,
+					_("It appears that your system administrator have\n"
+					  "restricted access to the graphics card."));
+#undef __test
+			} else {
+				gid_t supplemental_groups[NGROUPS_MAX];
+				r = getgroups(NGROUPS_MAX, supplemental_groups);
+				if (r < 0) {
+					perror("getgroups");
+					goto card_error;
+				}
+				int i, n = r;
+				for (i = 0; i < n; i++) {
+					if (supplemental_groups[i] == attr.st_gid)
+						break;
+				}
+				if (i != n) {
+					fprintf(stderr, _("Failed to access the graphics card.\n"));
+				} else {
+					struct group *group = getgrgid(attr.st_gid);
+					if (group == NULL || group->gr_name == NULL) {
+						fprintf(stderr,
+							_("You need to be in the group %i to used DRM.\n"),
+							attr.st_gid);
+					} else {
+						fprintf(stderr,
+							_("You need to be in the group `%s' to used DRM.\n"),
+							group->gr_name);
+					}
+				}
+			}
+		} else {
+			perror("open");
+		}
+		goto card_error;
+	card_removed:
+		  fprintf(stderr, _("It appears that you have removed a graphics card.\n"
+				    "Please do not do that, it's so rude. I cannot\n"
+				    "imagine what issues it might have caused you.\n"));
+	card_error:
 		free(data);
 		return -1;
 	}
@@ -204,6 +258,7 @@ drm_set_ramps(gamma_server_state_t *state, gamma_crtc_state_t *crtc, gamma_ramps
 
 	/* Errors must be ignored, because we do not have
 	   permission to do this will a display server is active. */
+	/* TODO: ...well with could check for other errors than permission errors.*/
 	return 0;
 }
 
