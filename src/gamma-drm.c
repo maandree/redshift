@@ -26,6 +26,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <limits.h>
 
 #ifdef ENABLE_NLS
 # include <libintl.h>
@@ -68,10 +69,10 @@ drm_open_site(gamma_server_state_t *state, char *site, gamma_site_state_t *site_
 	site_out->partitions_available = 0;
 
 	/* Count the number of available graphics cards. */
-	char pathname[4096];
+	char pathname[PATH_MAX];
 	struct stat _attr;
 	while (1) {
-		snprintf(pathname, 4096, DRM_DEV_NAME, DRM_DIR_NAME,
+		snprintf(pathname, PATH_MAX, DRM_DEV_NAME, DRM_DIR_NAME,
 			 (int)site_out->partitions_available);
 		if (stat(pathname, &_attr))
 			break;
@@ -100,8 +101,8 @@ drm_open_partition(gamma_server_state_t *state, gamma_site_state_t *site,
 	partition_out->data = data;
 
 	/* Acquire access to a graphics card. */
-	char pathname[4096];
-	snprintf(pathname, 4096, DRM_DEV_NAME, DRM_DIR_NAME, (int)partition);
+	char pathname[PATH_MAX];
+	snprintf(pathname, PATH_MAX, DRM_DEV_NAME, DRM_DIR_NAME, (int)partition);
 
 	data->fd = open(pathname, O_RDWR | O_CLOEXEC);
 	if (data->fd < 0) {

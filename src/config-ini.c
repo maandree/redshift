@@ -28,6 +28,8 @@
 #include <unistd.h>
 #ifndef _WIN32
 # include <pwd.h>
+#else
+# include <limits.h>
 #endif
 
 #include "config-ini.h"
@@ -39,7 +41,13 @@
 # define _(s) s
 #endif
 
-#define MAX_CONFIG_PATH  4096
+#ifndef MAX_CONFIG_PATH
+# ifdef PATH_MAX
+#  define MAX_CONFIG_PATH  PATH_MAX
+# else
+#  define MAX_CONFIG_PATH  4096
+# endif
+#endif
 #define MAX_LINE_LENGTH   512
 
 
