@@ -144,7 +144,7 @@ drm_open_crtc(gamma_server_state_t *state, gamma_site_state_t *site,
 	crtc_out->data = (void*)(size_t)crtc_id;
 	drmModeCrtc *crtc_info = drmModeGetCrtc(card->fd, crtc_id);
 	if (crtc_info == NULL) {
-		fprintf(stderr, _("Please do no unplug monitors!\n"));
+		fprintf(stderr, _("Please do not unplug monitors!\n"));
 		return -1;
 	}
 
