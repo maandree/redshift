@@ -44,6 +44,8 @@ typedef struct {
 } drm_state_t;
 
 
+int drm_auto(void);
+
 int drm_init(drm_state_t *state);
 int drm_start(drm_state_t *state);
 void drm_free(drm_state_t *state);

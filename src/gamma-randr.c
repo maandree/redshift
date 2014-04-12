@@ -41,6 +41,12 @@
 
 
 int
+randr_auto()
+{
+	return getenv("DISPLAY") && *getenv("DISPLAY");
+}
+
+int
 randr_init(randr_state_t *state)
 {
 	/* Initialize state. */

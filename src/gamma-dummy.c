@@ -29,6 +29,12 @@
 
 
 int
+gamma_dummy_auto()
+{
+	return 0;
+}
+
+int
 gamma_dummy_init(void *state)
 {
 	return 0;

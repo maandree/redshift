@@ -46,6 +46,8 @@ typedef struct {
 } randr_state_t;
 
 
+int randr_auto(void);
+
 int randr_init(randr_state_t *state);
 int randr_start(randr_state_t *state);
 void randr_free(randr_state_t *state);
