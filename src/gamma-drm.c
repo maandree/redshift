@@ -468,15 +468,16 @@ drm_init(gamma_server_state_t *state)
 	r = gamma_init(state);
 	if (r != 0) return r;
 
-	state->free_partition_data = drm_free_partition;
-	state->free_crtc_data      = drm_free_crtc;
-	state->open_site           = drm_open_site;
-	state->open_partition      = drm_open_partition;
-	state->open_crtc           = drm_open_crtc;
-	state->invalid_partition   = drm_invalid_partition;
-	state->set_ramps           = drm_set_ramps;
-	state->set_option          = drm_set_option;
-	state->parse_selection     = drm_parse_selection;
+	state->selections->sizeof_data = sizeof(drm_selection_data_t);
+	state->free_partition_data     = drm_free_partition;
+	state->free_crtc_data          = drm_free_crtc;
+	state->open_site               = drm_open_site;
+	state->open_partition          = drm_open_partition;
+	state->open_crtc               = drm_open_crtc;
+	state->invalid_partition       = drm_invalid_partition;
+	state->set_ramps               = drm_set_ramps;
+	state->set_option              = drm_set_option;
+	state->parse_selection         = drm_parse_selection;
 
 	return 0;
 }

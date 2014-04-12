@@ -590,17 +590,18 @@ randr_init(gamma_server_state_t *state)
 	r = gamma_init(state);
 	if (r != 0) return r;
 
-	state->selections->site    = getenv("DISPLAY") ? strdup(getenv("DISPLAY")) : NULL;
-	state->free_site_data      = randr_free_site;
-	state->free_partition_data = randr_free_partition;
-	state->free_crtc_data      = randr_free_crtc;
-	state->open_site           = randr_open_site;
-	state->open_partition      = randr_open_partition;
-	state->open_crtc           = randr_open_crtc;
-	state->invalid_partition   = randr_invalid_partition;
-	state->set_ramps           = randr_set_ramps;
-	state->set_option          = randr_set_option;
-	state->parse_selection     = randr_parse_selection;
+	state->selections->sizeof_data = sizeof(randr_selection_data_t);
+	state->selections->site        = getenv("DISPLAY") ? strdup(getenv("DISPLAY")) : NULL;
+	state->free_site_data          = randr_free_site;
+	state->free_partition_data     = randr_free_partition;
+	state->free_crtc_data          = randr_free_crtc;
+	state->open_site               = randr_open_site;
+	state->open_partition          = randr_open_partition;
+	state->open_crtc               = randr_open_crtc;
+	state->invalid_partition       = randr_invalid_partition;
+	state->set_ramps               = randr_set_ramps;
+	state->set_option              = randr_set_option;
+	state->parse_selection         = randr_parse_selection;
 
 	if (getenv("DISPLAY") != NULL && state->selections->site == NULL) {
 		perror("strdup");
