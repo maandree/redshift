@@ -15,6 +15,7 @@
    along with Redshift.  If not, see <http://www.gnu.org/licenses/>.
 
    Copyright (c) 2010  Jon Lund Steffensen <jonlst@gmail.com>
+   Copyright (c) 2014  Mattias Andrée <maandree@member.fsf.org>
 */
 
 
@@ -27,6 +28,7 @@
 #include <unistd.h>
 #ifndef _WIN32
 # include <pwd.h>
+# include <limits.h>
 #endif
 
 #include "config-ini.h"
@@ -38,7 +40,13 @@
 # define _(s) s
 #endif
 
-#define MAX_CONFIG_PATH  4096
+#ifndef MAX_CONFIG_PATH
+# ifdef PATH_MAX
+#  define MAX_CONFIG_PATH  PATH_MAX
+# else
+#  define MAX_CONFIG_PATH  4096
+# endif
+#endif
 #define MAX_LINE_LENGTH   512
 
 
@@ -57,7 +65,6 @@ open_config_file(const char *filepath)
 	*/
 
 	if (filepath == NULL) {
-		FILE *f = NULL;
 		char cp[MAX_CONFIG_PATH];
 		char *env;
 
@@ -188,14 +195,14 @@ config_ini_init(config_ini_state_t *state, const char *filepath)
 			state->sections = section;
 
 			/* Copy section name. */
-			section->name = malloc(end - name + 1);
+			section->name = malloc((size_t)(end - name + 1) * sizeof(char));
 			if (section->name == NULL) {
 				fclose(f);
 				config_ini_free(state);
 				return -1;
 			}
 
-			memcpy(section->name, name, end - name + 1);
+			memcpy(section->name, name, (size_t)(end - name + 1) * sizeof(char));
 		} else {
 			/* Split assignment at equals character. */
 			char *end = strchr(s, '=');
@@ -234,18 +241,18 @@ config_ini_init(config_ini_state_t *state, const char *filepath)
 			section->settings = setting;
 
 			/* Copy name of setting. */
-			setting->name = malloc(end - s + 1);
+			setting->name = malloc((size_t)(end - s + 1) * sizeof(char));
 			if (setting->name == NULL) {
 				fclose(f);
 				config_ini_free(state);
 				return -1;
 			}
 
-			memcpy(setting->name, s, end - s + 1);
+			memcpy(setting->name, s, (size_t)(end - s + 1) * sizeof(char));
 
 			/* Copy setting value. */
 			size_t value_len = strlen(value) + 1;
-			setting->value = malloc(value_len);
+			setting->value = malloc(value_len * sizeof(char));
 			if (setting->value == NULL) {
 				fclose(f);
 				config_ini_free(state);
@@ -285,7 +292,7 @@ config_ini_free(config_ini_state_t *state)
 }
 
 config_ini_section_t *
-config_ini_get_section(config_ini_state_t *state, const char *name)
+config_ini_get_section(const config_ini_state_t *state, const char *name)
 {
 	config_ini_section_t *section = state->sections;
 	while (section != NULL) {
@@ -297,3 +304,36 @@ config_ini_get_section(config_ini_state_t *state, const char *name)
 
 	return NULL;
 }
+
+config_ini_section_t **
+config_ini_get_sections(const config_ini_state_t *state, const char *name)
+{
+	config_ini_section_t **sections = malloc(1 * sizeof(config_ini_section_t*));
+	if (sections == NULL) {
+		perror("malloc");
+		return NULL;
+	}
+
+	size_t ptr = 0;
+	config_ini_section_t *section = state->sections;
+	while (section != NULL) {
+		if (strcasecmp(section->name, name) == 0) {
+			sections[ptr++] = section;
+
+			if ((ptr & -ptr) == ptr) {
+				sections = realloc(sections,
+						   (ptr << 1) * sizeof(config_ini_section_t*));
+				if (sections == NULL) {
+				  perror("realloc");
+				  return NULL;
+				}
+			}
+		}
+
+		section = section->next;
+	}
+
+	sections[ptr] = NULL;
+	return sections;
+}
+
