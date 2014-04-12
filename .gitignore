@@ -1,3 +1,7 @@
+/dist/*
+!/dist/PKGBUILD
+!/dist/redshift-ma.install
+
 # Hidden and temporary files
 .*
 !.git*
