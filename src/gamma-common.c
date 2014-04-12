@@ -81,7 +81,7 @@ gamma_free_selections(gamma_server_state_t *state)
 	/* Free data in each selection. */
 	for (i = 0; i < state->selections_made; i++) {
 		if (state->selections[i].data != NULL)
-			state->free_selection_data(state->selections[i].data);
+			free(state->selections[i].data);
 		if (state->selections[i].site != NULL)
 			free(state->selections[i].site);
 	}
@@ -227,7 +227,11 @@ next_partition:
 	}
 	if (site_i == iterator->state->sites_used)
 		return 0;
-	if (iterator->state->sites[site_i].partitions[partition_i].used == 0) {
+	if (iterator->state->sites[site_i].partitions[partition_i].used == 0 ||
+	    iterator->state->sites[site_i].partitions[partition_i].crtcs_used == 0) {
+		/* Because of `state->parse_selection` it is possible to have
+		   a partition that is initalise but not used. This is when
+		   used ≠ 0 but crtcs_used = 0. */
 		partition_i += 1;
 		goto next_partition;
 	}

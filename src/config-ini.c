@@ -48,6 +48,7 @@
 # endif
 #endif
 #define MAX_LINE_LENGTH   512
+/* At least 256 is required for EDIDs by them self */
 
 
 static FILE *

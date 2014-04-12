@@ -157,7 +157,6 @@ struct gamma_server_state_t {
 	gamma_data_free_func *free_site_data;
 	gamma_data_free_func *free_partition_data;
 	gamma_data_free_func *free_crtc_data;
-	gamma_data_free_func *free_selection_data;
 	/* Functions that open sites, partitions and CRTC:s. */
 	gamma_open_site_func *open_site;
 	gamma_open_partition_func *open_partition;
@@ -256,7 +255,7 @@ int parse_gamma_string(const char *str, float gamma[3]);
 /* Perform update on relevent selections. */
 #define on_selections(INSTRUCTION)							\
 	if (section >= 0) {								\
-		gamma_selection_state_t *sel = state->selections + section;		\
+		gamma_selection_state_t *sel = state->selections + (size_t)section;	\
 		INSTRUCTION								\
 	} else {									\
 		gamma_selection_state_t *sel = state->selections;			\
