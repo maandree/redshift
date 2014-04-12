@@ -625,6 +625,7 @@ randr_print_help(FILE *f)
 	/* TRANSLATORS: RANDR help output
 	   left column must not be translated */
 	fputs(_("  crtc=N\tCRTC to apply adjustments to\n"
+		"  edid=VALUE\tThe EDID of the monitor to apply adjustments to\n"
 		"  screen=N\tX screen to apply adjustments to\n"
 		"  display=NAME\tX display to apply adjustments to\n"), f);
 	fputs("\n", f);

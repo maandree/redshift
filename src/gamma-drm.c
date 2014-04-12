@@ -521,7 +521,8 @@ drm_print_help(FILE *f)
 
 	/* TRANSLATORS: DRM help output
 	   left column must not be translated */
-	fputs(_("  card=N\tGraphics card to apply adjustments to\n"
-		"  crtc=N\tCRTC to apply adjustments to\n"), f);
+	fputs(_("  crtc=N\tCRTC to apply adjustments to\n"
+		"  edid=VALUE\tThe EDID of the monitor to apply adjustments to\n"
+		"  card=N\tGraphics card to apply adjustments to\n"), f);
 	fputs("\n", f);
 }
