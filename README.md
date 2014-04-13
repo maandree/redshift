@@ -1,18 +1,6 @@
 This branch contains features not yet merged into the mainline.
 Included features not merge into the mainline:
 
-### GeoClue segmentation violation bug fix
-Patch segmentation violation caused by redshift
-retrying to read an error message that has not
-been set if GeoClue cannot be started. Known only
-to happen when running without X.
-
-### Start GeoClue in X display :0 when in TTY
-If there is no X display specified, redshift will
-automatically select display :0 if using GeoClue,
-in an attempt to use GeoClue which requires X.
-This only works if :0 is actually running.
-
 ### Improved autoselection of adjustment method
 Redshift reads environment variables to figure
 out which adjustment method to use if not method
