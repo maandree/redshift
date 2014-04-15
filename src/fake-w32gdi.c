@@ -87,7 +87,7 @@ BOOL EnumDisplayDevices(LPCTSTR lpDevice, DWORD iDevNum, PDISPLAY_DEVICE lpDispl
 {
 	(void) dwFlags;
 	if (lpDevice != NULL) {
-		fprintf(stderr, "lpDevice (argument 1) for EnumDisplayDevices should be NULL");
+		fprintf(stderr, "lpDevice (argument 1) for EnumDisplayDevices should be NULL\n");
 		abort();
 		return FALSE;
 	}
@@ -95,7 +95,7 @@ BOOL EnumDisplayDevices(LPCTSTR lpDevice, DWORD iDevNum, PDISPLAY_DEVICE lpDispl
 		return FALSE;
 	if (lpDisplayDevice->cb != sizeof(DISPLAY_DEVICE)) {
 		fprintf(stderr,
-			"lpDisplayDevice->cb for EnumDisplayDevices is not sizeof(DISPLAY_DEVICE)");
+			"lpDisplayDevice->cb for EnumDisplayDevices is not sizeof(DISPLAY_DEVICE)\n");
 		abort();
 		return FALSE;
 	}
@@ -247,7 +247,7 @@ BOOL EnumDisplayDevices(LPCTSTR lpDevice, DWORD iDevNum, PDISPLAY_DEVICE lpDispl
 	(void) dwFlags;
 	size_t count = (size_t)crtc_count;
 	if (lpDevice != NULL) {
-		fprintf(stderr, "lpDevice (argument 1) for EnumDisplayDevices should be NULL");
+		fprintf(stderr, "lpDevice (argument 1) for EnumDisplayDevices should be NULL\n");
 		abort();
 		return FALSE;
 	}
@@ -262,7 +262,7 @@ BOOL EnumDisplayDevices(LPCTSTR lpDevice, DWORD iDevNum, PDISPLAY_DEVICE lpDispl
 		return FALSE;
 	if (lpDisplayDevice->cb != sizeof(DISPLAY_DEVICE)) {
 		fprintf(stderr,
-			"lpDisplayDevice->cb for EnumDisplayDevices is not sizeof(DISPLAY_DEVICE)");
+			"lpDisplayDevice->cb for EnumDisplayDevices is not sizeof(DISPLAY_DEVICE)\n");
 		abort();
 		return FALSE;
 	}
