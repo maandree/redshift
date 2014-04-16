@@ -30,12 +30,12 @@ other than zero, or otherwise cannot be executed successfully,
 it with use the value `fallback-crtc-index`.
 
 ### Fake Windows GDI support using RandR
-If built with `--enable-fakegdi --enable-wingdi` it is
-possible to use the `wingdi` adjustment method without
-Windows. If built with this options, when `wingdi` is
-used the Windows GDI calls will be translated to X RandR
-calls. This is intended for testing updates to the
-`gamma-w32gdi` without have to run Windows.
+If built with `--enable-fakegdi` it is possible to use
+the `wingdi` adjustment method without Windows. If built
+with this options, when `wingdi` is used the Windows GDI
+calls will be translated to X RandR calls. This is intended
+for testing updates to the `gamma-w32gdi` without have to
+run Windows.
 
 ### Change in the -l and -m arguments
 `:` in the argument for the options `-l` and `-m`
@@ -95,4 +95,20 @@ calibration information. Becuase of this addition it
 is also possible to use `ignorable=1` which causes
 redshift to skip a display, graphics card, screen,
 CRTC or monitor it cannot find.
+
+### Quartz support for Mac OS X
+Quartz support using Core Graphics has been added
+for Mac OS X support. This have however only been
+tested on GNU/Linux using the `--enable-fakequartz`
+configure option and it is plausible that it will
+not run on or compile for Mac OS X.
+
+### Fake Quartz support using RandR
+If built with `--enable-fakequartz` it is possible to
+use the new `quartz` adjustment method without Mac
+OS X. If built with this options, when `quartz` is
+used the Core Graphics calls will be translated to
+X RandR calls. This is intended for testing updates
+to the `gamma-quartz` without have to run Mac OS X,
+as will as to be able to test the original implemention.
 
