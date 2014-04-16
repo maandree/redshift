@@ -35,6 +35,16 @@
 #include "gamma-quartz.h"
 
 
+int
+quartz_auto()
+{
+#ifdef FAKE_QUARTZ
+	return 0;
+#else
+	return 1;
+#endif
+}
+
 static void
 quartz_free_crtc(void *data)
 {

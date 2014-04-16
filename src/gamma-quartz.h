@@ -34,6 +34,8 @@
 #endif
 
 
+int quartz_auto(void);
+
 int quartz_init(gamma_server_state_t *state);
 int quartz_start(gamma_server_state_t *state);
 
