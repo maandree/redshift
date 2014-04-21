@@ -68,7 +68,7 @@ Texts. A copy of the license is included in the section entitled
 Redshift is command line program that adjusts the colour temperature
 of your monitor. This means it can make your screen more red or
 more blue. You might have seen this on you monitor's control panel
-if you have an good old CRT monitor, perhaps some LCD:s have it too.
+if you have a good old CRT monitor, perhaps some LCD:s have it too.
 But Redshift can adjust the colour temperature dynamically to follow
 the cadence of the Sun; or it can do one fixed adjustment.
 
@@ -85,14 +85,14 @@ you make in the monitor's control panel.
 Using the default settings, Redshift will adjust your monitor to
 be 5500 K during the day and 3500 K during the night, with a smooth
 transition during twilight to allow your eyes to slowly adapt.
-Preferably this settings should match the room's lightning
+Preferably these settings should match the room's lightning
 termperature. In greater detail, Redshift will perform the
 transition when the Sun's elevation is between 3 degrees above the
 horizon and 6 degrees below the horizon, that is, slightly before
 sunset or slightly after sunrise, and between civil and nautical
 twilight.
 
-These adjustment can help reduce eye strain, insomnia and delayed
+These adjustments can help reduce eye strain, insomnia and delayed
 sleep phase syndrome. But you can also apply colour temperatures
 above 6500 K to make your monitor extra blue which can boost
 productivity.
@@ -138,7 +138,7 @@ brightest colour@footnote{Which in calibration nomenclature
 is called contrast.}, it is a software implemention of fake
 backlight adjustments.
 
-One a technically level, this adjustment is applied after
+On a technical level, this adjustment is applied after
 the gamma correction has been applied, in contrast to
 calibrations where it is applied before.
 
@@ -161,7 +161,7 @@ using @option{-g 1:1:1}.
 
 @item -r
 By default Redshift will perform a long transition
-when it is started so that you eyes can slowly adapt,
+when it is started so that your eyes can slowly adapt,
 as well as shorter transitions when it is enabled,
 disabled or exits. You can use this option to disable
 transitions.
@@ -202,7 +202,7 @@ the X extension Resize and Rotate (RandR) (using the
 XCB library) if you start Redshift from X otherwise
 have the @var{DISPLAY} environment variable set, which
 it will be if you are using XWayland or XMir. If RandR
-fails it use the X extension VidMode (using the libX11
+fails it uses the X extension VidMode (using the libX11
 library). However, if you are on Linux@footnote{You
 know, the kernel.} and are in Linux Virtual Terminal
 @footnote{That is, non-graphical mode; also called
@@ -213,7 +213,7 @@ If you are running Windows, Windows Graphics Device
 Interface (Windows GDI). And on OS X, the Quartz library
 Core Graphics.
 
-The @option{-m} option can be use to select exactly
+The @option{-m} option can be used to select exactly
 which infrastructure to use. By running
 @command{redshift -m list} you will get a list of
 all available options. They are: @option{randr},
@@ -252,7 +252,7 @@ This option enables reset mode. When used Redshift will
 remove adjustments from the monitor.
 @end table
 
-You an also use the command @command{redshift-gtk} instead
+You can also use the command @command{redshift-gtk} instead
 of @command{redshift}. This will start Redshift when a
 system tray icon, or AppIndicator icon if you have
 AppIndicator installed.
@@ -268,7 +268,7 @@ be done by pressing @kbd{Control-c} in the terminal or
 sending it a termination signal (SIGTERM) using for example
 @command{pkill -TERM redshift}. When you signal it to exit
 till will transition into a clear state without adjustments.
-You you send it another signal to exit it will immediately
+If you send it another signal to exit it will immediately
 remove all adjustments and exit without further transition.
 
 It is also possible to temporarily disable and enable
@@ -286,7 +286,7 @@ signal facility in POSIX systems.
 @chapter Selecting Monitor
 
 Windows and OS X users only need to know that a CRTC is an
-output on any graphics card it may are not be attached to
+output on any graphics card it may or may not be attached to
 a monitor; adjustments to disconnected outputs does not
 cause errors. The CRTC:s are index from 0, but you can also
 use the value @code{all} to select all available CRTC:s.
@@ -304,7 +304,7 @@ indices are local to the scope of the graphics card. One
 CRTC is available per online connector, independently of
 whether it is active (have a monitor attached). An online
 connector as an output on your graphics card. @option{edid}
-refers the a Extended Display Information Data (EDID) of a
+refers the Extended Display Information Data (EDID) of a
 monitor. This a 256 characters (128 bytes) long hexadecimal
 character sequence that identifies and describes a monitor.
 Most monitor supply this information as it is used for play
@@ -334,7 +334,7 @@ display is everything that you see and what binds it all
 together and makes it viewable. Independently of how many
 monitors you have you can only have one display visible at
 any given time, it contains all monitors. A display is
-address by a hostname and an display index. On X the first
+address by a hostname and a display index. On X the first
 create display locally on the machine is named ``:0'' and
 programs know what display they belong to by reading the
 environment variable @var{DISPLAY}. In a display you have
@@ -342,10 +342,10 @@ collections of CRTC:s called screens. Normally you only
 have one screen, screen 0, but you can also have one screen
 per CRTC or any number of CRTC in a screen. Most users have
 only one screens, the major reason for this is thay only
-especially written software like GIMP and Emacs can be
-moved between screens. On a graphics card you connectors
-two which monitors are attached; each connector that is
-online an a CRTC. In X, CRTC indices are local to the scope
+especially written software like GIMP and Emacs can be moved
+between screens. On a graphics card you have connectors
+to which monitors are attached; each connector that is
+online have a CRTC. In X, CRTC indices are local to the scope
 of the screen, not to the graphics card, and the indices
 are reorded so that the primary output have index 0.
 
@@ -362,7 +362,7 @@ DRM section, to your monitor's EDID you can run
 for @option{drm}. @option{display} does not support the
 @code{all} value, neither does @option{edid}, rather you
 specify the name of the X display to connect to. If this
-option is not specify the display indicated by the
+option is not specified the display indicated by the
 environment variable @var{DISPLAY} is used.
 
 If you are using the command line the options are delimited
@@ -507,7 +507,7 @@ gamma=1.10:1.16:1.10
 ; when DRM is used. It is similar to the first
 ; `randr' section, but we do not have a screen
 ; index but we have a graphics card index. You
-; might also notice the the CRTC index is
+; might also notice that the CRTC index is
 ; different this is because RandR reorders the
 ; CRTC:s so that the primary monitor have index
 ; 0, DRM cannot do this because it does not
@@ -547,7 +547,7 @@ screen=0
 
 Redshift also have support for identify monitors
 by their EDID if RandR or DRM is used. When this
-is done it makes since to ignore monitors that
+is done it makes sense to ignore monitors that
 are not found. In this example RandR is used,
 but simply exchange `randr' for `drm' will cause
 Redshift to use DRM instead:
