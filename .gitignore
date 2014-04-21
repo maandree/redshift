@@ -55,6 +55,10 @@ src/redshift
 src/redshift-gtk/__pycache__/
 /data/systemd/redshift.service
 /data/systemd/redshift-gtk.service
+redshift.info
+redshift.pdf
+redshift.dvi
+redshift.ps
 
 # gettext
 /po/POTFILES

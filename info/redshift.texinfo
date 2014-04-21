@@ -1,0 +1,628 @@
+\input texinfo   @c -*-texinfo-*-
+
+@c %**start of header
+@setfilename redshift.info
+@settitle redshift
+@afourpaper
+@documentencoding UTF-8
+@documentlanguage en
+@finalout
+@c %**end of header
+
+
+@dircategory Ergonomy
+@direntry
+* redshift: (redshift).            Automatically adjust the colour temperature
+@end direntry
+
+
+@copying
+Copyright @copyright{} 2014 Mattias Andrée
+
+@quotation
+Permission is granted to copy, distribute and/or modify this document
+under the terms of the GNU Free Documentation License, Version 1.3 or
+any later version published by the Free Software Foundation; with no
+Invariant Sections, with no Front-Cover Texts, and with no Back-Cover
+Texts. A copy of the license is included in the section entitled
+``GNU Free Documentation License''.
+@end quotation
+@end copying
+
+@ifnottex
+@node Top
+@top Redshift -- Automatically adjust the colour temperature
+@insertcopying
+@end ifnottex
+
+@titlepage
+@title Redshift
+@subtitle Automatically adjust the colour temperature
+@author Manual by Mattias Andrée (maandree)
+
+@page
+@vskip 0pt plus 1filll
+@insertcopying
+@end titlepage
+
+@contents
+
+
+
+@menu
+* Overview::                        Brief overview of Redshift.
+* Invoking::                        Invocation of Redshift.
+* Interfacing::                     Interfacing with Redshift.
+* Selecting Monitor::               How to select monitor.
+* Configuring::                     Configuring Redshift.
+* Where in the world am I?::        Figuring out your geographical location.
+* My cursor is blue!::              Applying adjustment to the cursor.
+* GNU Free Documentation License::  Copying and sharing this manual.
+@end menu
+
+
+
+@node Overview
+@chapter Overview
+
+Redshift is command line program that adjusts the colour temperature
+of your monitor. This means it can make your screen more red or
+more blue. You might have seen this on you monitor's control panel
+if you have an good old CRT monitor, perhaps some LCD:s have it too.
+But Redshift can adjust the colour temperature dynamically to follow
+the cadence of the Sun; or it can do one fixed adjustment.
+
+The normal colour temperature for monitors is 6500 K
+@footnote{When talking about colour temperatures old measurements
+of natural constants are used. Converted to new measurements,
+colour temperatures are 1,000556328 times as large makeing
+6500 K into circa 6504 K.}, this is a colour that is said to
+be pure white. Redshift assumes that your monitor is calibrated
+to use this colour temperature, if not, the colour temperature
+values will be off, since Redshift cannot change the adjustments
+you make in the monitor's control panel.
+
+Using the default settings, Redshift will adjust your monitor to
+be 5500 K during the day and 3500 K during the night, with a smooth
+transition during twilight to allow your eyes to slowly adapt.
+Preferably this settings should match the room's lightning
+termperature. In greater detail, Redshift will perform the
+transition when the Sun's elevation is between 3 degrees above the
+horizon and 6 degrees below the horizon, that is, slightly before
+sunset or slightly after sunrise, and between civil and nautical
+twilight.
+
+These adjustment can help reduce eye strain, insomnia and delayed
+sleep phase syndrome. But you can also apply colour temperatures
+above 6500 K to make your monitor extra blue which can boost
+productivity.
+
+
+
+@node Invoking
+@chapter Invoking
+
+Redshift is designed as a command line tool. This means that it
+have a set options that it can be started with to specify how it
+should behaviour. @command{redshift} recognises the following
+options:
+
+@table @option
+@item -h
+This option will cause @command{redshift} to print a help
+message contain this information.
+
+@item -V
+This option will cause @command{redshift} to print its
+version number.
+
+@item -v
+When this option is used @command{redshift} will print updates
+about its status. This information include your location,
+settings, the current brightness and the current temperature,
+and also whether it is disabled or enabled.
+This option is primary indented to be used for front-end programs.
+
+@item -b DAY:NIGHT
+This option can be used to select brightness settings.
+One value for the brightness during the day, and one
+value for the brightness during the night. The default
+value is 1 during both the day and the night. This is
+equivalent to using @option{-b 1:1}.
+
+The word brightness can have two very distinct meanings.
+One meaning is the brightness level of the darkest colour,
+this is what it means when you are calibration your monitor.
+But in Redshift it means the brightness level of the
+brightest colour@footnote{Which in calibration nomenclature
+is called contrast.}, it is a software implemention of fake
+backlight adjustments.
+
+One a technically level, this adjustment is applied after
+the gamma correction has been applied, in contrast to
+calibrations where it is applied before.
+
+@item -t DAY:NIGHT
+This option lets you select what colour temperature
+Redshift should apply during the day and during the
+night. The default value are 5500 and 3500, both in
+Kelvins. This is equivalent to using
+@option{-t 5500:3500}.
+
+@item -g R:G:B
+By using this option you can let Redshift know of your
+monitor's gamma correction values, so that Redshift can
+apply them. This option's argument consists of three
+values the gamma correction for the red colour channel,
+the green colour channel and the blue colour channel.
+By default these values are 1, which means that no
+gamma correction takes place. This is equivalent to
+using @option{-g 1:1:1}.
+
+@item -r
+By default Redshift will perform a long transition
+when it is started so that you eyes can slowly adapt,
+as well as shorter transitions when it is enabled,
+disabled or exits. You can use this option to disable
+transitions.
+
+@item -P
+By using this option Redshift will read the monitor's
+current adjustments when it starts and use those on
+top of the adjustment Redshift does itself. This can
+be used if have monitor calibrations set via a more
+elaborate method than simple gamma correction values.
+
+@item -l LAT:LON
+For Redshift to be able to dynamically adjust your
+monitor's colour temperature it must know your location
+so that it can calculate the Sun's local elevation.
+If you do not expect to travel too far you can give it
+your location manually by using the @option{-l} option.
+To do this, give your location in decimal format with
+a colon (`:') between the latitude and the longitude.
+For example, if your are located 51,50 degrees north of
+the equator and 0,12 degrees of west of the prime meridian,
+@footnote{That is, if you are Big Ben.}
+use @option{-l 51.50:-0.12}.
+
+@item -l PROVIDER
+It is also possible to utilise an external service
+to get your current location. To list all available
+location provides run @command{redshift -l list}.
+Currently only manual mode and GeoClue is available.
+To use GeoClue use the option @option{-l geoclue}.
+You can also get additional options for GeoClue by
+running @command{redshift -l geoclue,help}.
+
+@item -m METHOD
+Redshift can utilise multiple system infrastructures
+to adjust the colours. By default Redshift will use
+the X extension Resize and Rotate (RandR) (using the
+XCB library) if you start Redshift from X otherwise
+have the @var{DISPLAY} environment variable set, which
+it will be if you are using XWayland or XMir. If RandR
+fails it use the X extension VidMode (using the libX11
+library). However, if you are on Linux@footnote{You
+know, the kernel.} and are in Linux Virtual Terminal
+@footnote{That is, non-graphical mode; also called
+TTY, Linux VT or Linux console.} it will use Direct
+Rendering Manager (DRM).
+
+If you are running Windows, Windows Graphics Device
+Interface (Windows GDI). And on OS X, the Quartz library
+Core Graphics.
+
+The @option{-m} option can be use to select exactly
+which infrastructure to use. By running
+@command{redshift -m list} you will get a list of
+all available options. They are: @option{randr},
+@option{vidmode}, @option{drm}, @option{wingdi} and
+@option{quartz}, but also @option{dummy} which will
+not perform any adjustments.
+
+Additionally, @option{-m} can be used to select which
+monitor to perform adjustments on. By running
+@command{redshift -m randr,help} for RandR and analogously
+for the other methods, you can get a list of all options.
+
+@item -c FILE
+If you have a file named @file{redshift.conf} in the
+directory @file{.config} in your home directory, Redshift
+will load configurions from that file. If you want to use
+another file, you can use this option.
+
+@item -o
+This option enables what is called `one shot mode'. When
+this is used Redshift will apply the settings that it
+normally without at the current time. However it will
+only apply one adjustment and then exit.
+
+@item -O TEMP
+This option enables what is called `one shot manual mode'.
+When this is used Redshift will apply the colour temperature
+that is selected with this option and then exit.
+
+@item -p
+This option enables print mode. When used Redshift will
+print the parameters and then exit.
+
+@item -x
+This option enables reset mode. When used Redshift will
+remove adjustments from the monitor.
+@end table
+
+You an also use the command @command{redshift-gtk} instead
+of @command{redshift}. This will start Redshift when a
+system tray icon, or AppIndicator icon if you have
+AppIndicator installed.
+
+
+
+@node Interfacing
+@chapter Interfacing
+
+If you run Redshift in normal, continuous, mode it will
+never exit before you send it a signal to exit. This can
+be done by pressing @kbd{Control-c} in the terminal or
+sending it a termination signal (SIGTERM) using for example
+@command{pkill -TERM redshift}. When you signal it to exit
+till will transition into a clear state without adjustments.
+You you send it another signal to exit it will immediately
+remove all adjustments and exit without further transition.
+
+It is also possible to temporarily disable and enable
+Redshift, the latter being the default state. To do this,
+send it a SIGUSR1 signal to redshift:
+@command{pkill -USR1 redshift}. It will switch to
+either disabled or enabled mode depending on the current
+mode, while doing so it will perform a short transition.
+This is not possible in Windows due to the lack of the
+signal facility in POSIX systems.
+
+
+
+@node Selecting Monitor
+@chapter Selecting Monitor
+
+Windows and OS X users only need to know that a CRTC is an
+output on any graphics card it may are not be attached to
+a monitor; adjustments to disconnected outputs does not
+cause errors. The CRTC:s are index from 0, but you can also
+use the value @code{all} to select all available CRTC:s.
+But on Linux and BSD front it is a bit more complicated due
+to the additional capabilities.
+
+When using DRM (the @option{drm} method) you have the
+options @option{card}, @option{crtc} and @option{edid}.
+@option{card} refers the index of the graphics card, index
+from 0. @option{crtc} refers to a CRT controller (CRTC)
+@footnote{This is a legacy name, they can control any type
+of monitor.}, index from 0 start. If you have two graphics
+card both of them will have a CRTC with the index 0 as the
+indices are local to the scope of the graphics card. One
+CRTC is available per online connector, independently of
+whether it is active (have a monitor attached). An online
+connector as an output on your graphics card. @option{edid}
+refers the a Extended Display Information Data (EDID) of a
+monitor. This a 256 characters (128 bytes) long hexadecimal
+character sequence that identifies and describes a monitor.
+Most monitor supply this information as it is used for play
+and plug support; ancient monitors on the other hand may
+not have it. In very rare cases this sequence can be 512
+characters (256 bytes) long. By specifying this sequence
+(can be done in both lower case hexadecimal and upper case
+hexadecimal) you can make an adjustment for a specific
+monitor and ignore it if it is not plugged in. You can use
+the value @code{all} on either @option{card} or
+@option{crtc}, or both, to select all available graphics
+cards or CRTC:s within the selected graphics cards.
+
+If you are using X, or a compability layer such as XWayland
+or XMir, you have two options. You can either use RandR
+(the @option{randr} method) or VidMode (the @option{vidmode}
+method). If you do not have RandR enabled on your system
+you will need to use VidMode, but RandR is preferred.
+However RandR is not able to adjust your monitor you should
+try VidMode. RandR is preferred over VidMode because it
+has better multimontor support, to understand this you
+most first understand X's nomenclature, specifically the
+difference between screen and monitor.
+
+When you start X you create what is called a display. A
+display is everything that you see and what binds it all
+together and makes it viewable. Independently of how many
+monitors you have you can only have one display visible at
+any given time, it contains all monitors. A display is
+address by a hostname and an display index. On X the first
+create display locally on the machine is named ``:0'' and
+programs know what display they belong to by reading the
+environment variable @var{DISPLAY}. In a display you have
+collections of CRTC:s called screens. Normally you only
+have one screen, screen 0, but you can also have one screen
+per CRTC or any number of CRTC in a screen. Most users have
+only one screens, the major reason for this is thay only
+especially written software like GIMP and Emacs can be
+moved between screens. On a graphics card you connectors
+two which monitors are attached; each connector that is
+online an a CRTC. In X, CRTC indices are local to the scope
+of the screen, not to the graphics card, and the indices
+are reorded so that the primary output have index 0.
+
+With VidMode you can not specify which CRTC to use, only
+the primary CRTC for each screen can be controlled. This
+means that the @option{vidmode} method lacks the @option{crtc}
+option. It also lacks that @code{edid} option which is
+available for @option{drm} and also @option{randr}. Otherwise
+they have the same options, these options are @option{display}
+and @option{screen}. @code{edid} works as described in the
+DRM section, to your monitor's EDID you can run
+@command{xrandr --verbose}. The options @option{crtc} and
+@option{screen} works as @option{crtc} and @option{card} does
+for @option{drm}. @option{display} does not support the
+@code{all} value, neither does @option{edid}, rather you
+specify the name of the X display to connect to. If this
+option is not specify the display indicated by the
+environment variable @var{DISPLAY} is used.
+
+If you are using the command line the options are delimited
+by a comma (`,'). For example, if you want to use RandR and
+select CRTC 0 in screen 0 you run:
+
+@example
+redshift -m randr,crtc=0,screen=0
+@end example
+
+If you want to select multiple monitors, without using the
+@code{all} alternative, or multiple display you need to use
+a configuration file. See @ref{Configuring}.
+
+
+
+@node Configuring
+@chapter Configuring
+
+Redshift is configured via a text based configuration file
+located in the directory @file{.config} in your home directory
+with the filename @file{redshift.conf}. Redshift uses some
+heuristics to figure out the actual pathname with greater
+flexibility, and can fall back to @file{/etc/redshift.conf}
+if the use does not have her own configuration file,
+specifically it follows the XDG Base Directory Specification
+@footnote{@url{http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html}}.
+You can @command{redshift} with the @option{-c} option to
+select what configuration file to use.
+
+Here is an example of how configuration file can look:
+
+@example
+[redshift]
+; This header is used when specifing the overall settings
+
+temp-day=5500
+; On this line we have set the colour temperature to be
+; 5500 K during daytime. This is the default value.
+; This configuration corresponds to the first part
+; of the -t option.
+
+temp-night=3400
+; On this line we have set the colour temperature to be
+; 3500 K during nighttime. This is the default value.
+; This configuration corresponds to the second part
+; of the -t option.
+
+brightness-day=1.0
+; On this line we have set the brightness to be
+; 100 % during daytime. This is the default value.
+; This configuration corresponds to the first part
+; of the -b option.
+
+brightness-night=1.0
+; On this line we have set the brightness to be
+; 100 % during nighttime. This is the default value.
+; This configuration corresponds to the second part
+; of the -b option.
+
+gamma=1:1:1
+; This lines specifies that unless specifed otherwise
+; individually for a monitor, the gamma correction
+; should be 1 for the red channel (the first `1'),
+; 1 for the green channel (the second `1') and 1
+; for the blue channel (the third `1'). This means
+; that no gamma correction takes place an is equivalent
+; to using the -g option with the same value.
+
+transition=1
+; This line specifies that we want transitions, this
+; is the default behaviour. If we exchange the 1 for
+; a 0 transitions will be disabled. Setting this to
+; 0 is equivalent to using the -r option.
+
+preserve-calibrations=0
+; This line specifies that we do not want to use the
+; current calibrations as a base for our calibrations,
+; this is the default behaviour. If we exchange the 0
+; for a 1 the calibrations that are active when
+; Redshift starts we be applied on top of adjustments
+; made by Redshift. Setting this to 1 is equivalent
+; to using the -P option.
+
+adjustment-method=randr
+; This line specifies that we want to use RandR to
+; apply our adjustments. If we set this line to
+; `adjustment-method=vidmode' VidMode would be used
+; instead and analogously for `drm' to use DRM.
+; However, if we remove this line where ever Redshift
+; sees to fit best will be used, which means RandR
+; with VidMode as fallback if we are running X and
+; DRM otherwise.
+
+location-provider=manual
+; This line specifies that we have provided our
+; geographical location manually in the [manual]
+; section.
+
+
+[manual]
+; In this second we specify our coordinates manually.
+; It has no effect if [redshift] does not contain the
+; line `location-provider=manual'.
+
+lat=51.500756
+lon=0.124661
+; On these two lines have specified that our location
+; is 51,500756, -0,124661, which is the location of
+; Big Ben.
+
+
+[randr]
+; In this section we select our first monitor
+; when RandR is used.
+
+screen=0
+crtc=0
+; We have selected CRTC 0 in screen 0, this is
+; our primary monitor
+gamma=1.16:1.15:1.11
+; And we have selected a gamma correction of
+; 1,16 for the red channel, 1,15 for the green
+; channel and 1,11 for the blue channel.
+
+[randr]
+; In this section we select our second monitor
+; when RandR is used. You might notice that this
+; is the second section named `randr'. When a
+; method is selected all section with that method's
+; name is used, and each section is used to a
+; unique monitor (although we can get multiple
+; monitors if we use `all' on `screen' or `crtc'.)
+
+screen=0
+crtc=1
+gamma=1.10:1.16:1.10
+
+
+[drm]
+; In this section we select our first monitor
+; when DRM is used. It is similar to the first
+; `randr' section, but we do not have a screen
+; index but we have a graphics card index. You
+; might also notice the the CRTC index is
+; different this is because RandR reorders the
+; CRTC:s so that the primary monitor have index
+; 0, DRM cannot do this because it does not
+; have the concept of primary monitors.
+
+card=0
+crtc=1
+gamma=1.16:1.15:1.11
+
+[drm]
+; In this section we select our second monitor
+; when DRM is used.
+
+card=0
+crtc=0
+gamma=1.10:1.16:1.10
+@end example
+
+
+Another example where we use VidMode and GeoClue
+and have one monitor but two X display is:
+
+@example
+[redshift]
+adjustment-method=vidmode
+location-provider=geoclue
+
+[vidmode]
+display=:0
+screen=0
+
+[vidmode]
+display=:1
+screen=0
+@end example
+
+
+Redshift also have support for identify monitors
+by their EDID if RandR or DRM is used. When this
+is done it makes since to ignore monitors that
+are not found. In this example RandR is used,
+but simply exchange `randr' for `drm' will cause
+Redshift to use DRM instead:
+
+@example
+[redshift]
+adjustment-method=randr
+
+[randr]
+edid=xxxxxxxxxx
+ignorable=1
+
+[randr]
+edid=yyyyyyyyyy
+ignorable=1
+
+; Since we have not specifed `screen', `screen=all'
+; is used implicitly. But we can select screen if we
+; want to limit the screens that are search in for
+; the EDID:s.
+@end example
+
+The EDID values are really long so we have used
+`xxxxxxxxxx' and `yyyyyyyyyy' instead, partially
+for technical reasons.
+
+
+
+@node Where in the world am I?
+@chapter Where in the world am I?
+
+Few know there GPS coordiates by heart, probability even
+fewer know it in decimal notation. There are two great
+sources for getting your location: online phonebooks and
+other map services, and Wikipedia. Be aware that Wikipedia
+does not show the coordiates in decimal notation, but if
+you like on the link in the top right corner of the page
+you are linked to GeoHack that does it in decimal notation,
+among other notations.
+
+
+
+@node My cursor is blue!
+@chapter My cursor is blue!
+
+Because graphics drivers do not apply gamma ramps (colour
+curve adjustments) to hardware cursors your mouse cursor
+can look blue when Redshift is active. A simple fix for
+this is to switch to software cursor. The difference between
+the two is that X is responsible of drawing the cursor
+together with everything else. With hardware cursors, the
+cursor is painted on a separated plane, which makes cursors
+movement less choppy and eliminates blinking during movement,
+especially on old hardware. However some graphics drivers
+does not support hardware cursors.
+
+There is also an X level patch for this, however it merges
+into the X server mainline and does not apply the adjustments
+before the cursor image changes. This patch is available
+as three separate patch files:
+
+@itemize @bullet
+@item
+@url{http://lists.x.org/archives/xorg-devel/2014-April/041873.html}
+@item
+@url{http://lists.x.org/archives/xorg-devel/2014-April/041985.html}
+@item
+@url{http://lists.x.org/archives/xorg-devel/2014-April/041991.html}
+@end itemize
+
+
+
+@node GNU Free Documentation License
+@appendix GNU Free Documentation License
+@include fdl.texinfo
+
+@bye
+
