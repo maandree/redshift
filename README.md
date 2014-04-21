@@ -112,3 +112,8 @@ X RandR calls. This is intended for testing updates
 to the `gamma-quartz` without have to run Mac OS X,
 as will as to be able to test the original implemention.
 
+### More robust user home fetched
+The program will not crash if it fails to get the
+user's entry in the passwd file. It also adds support
+for homeless users.
+
