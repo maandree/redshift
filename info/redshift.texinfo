@@ -579,7 +579,7 @@ for technical reasons.
 @node Where in the world am I?
 @chapter Where in the world am I?
 
-Few know there GPS coordiates by heart, probability even
+Few know their GPS coordiates by heart, probability even
 fewer know it in decimal notation. There are two great
 sources for getting your location: online phonebooks and
 other map services, and Wikipedia. Be aware that Wikipedia
@@ -604,10 +604,10 @@ movement less choppy and eliminates blinking during movement,
 especially on old hardware. However some graphics drivers
 does not support hardware cursors.
 
-There is also an X level patch for this, however it merges
-into the X server mainline and does not apply the adjustments
-before the cursor image changes. This patch is available
-as three separate patch files:
+There is also an X level patch for this, however it isn't
+merged into the X server mainline and does not apply the
+adjustments before the cursor image changes. This patch is
+available as three separate patch files:
 
 @itemize @bullet
 @item
