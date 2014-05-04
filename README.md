@@ -12,6 +12,10 @@ while it is in the progress of a transition it will
 jump to the end of that transition and then start
 the new transition. This bug has been fix.
 
+### Do not update the gamma ramps while disabled
+Whne you have sent SIGUSR1 to redshift to disable it, it
+will no longer reset the gamma ramps every fifth second.
+
 ### Reading output of external commands to get configurations
 This feature will probably not be merge into the mainline.
 
