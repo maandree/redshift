@@ -12,7 +12,7 @@
 
 @dircategory Ergonomy
 @direntry
-* redshift: (redshift).            Automatically adjust the colour temperature
+* redshift: (redshift).            Set colour temperature of display according to time of day
 @end direntry
 
 
@@ -31,13 +31,13 @@ Texts. A copy of the license is included in the section entitled
 
 @ifnottex
 @node Top
-@top Redshift -- Automatically adjust the colour temperature
+@top Redshift -- Set colour temperature of display according to time of day
 @insertcopying
 @end ifnottex
 
 @titlepage
 @title Redshift
-@subtitle Automatically adjust the colour temperature
+@subtitle Set colour temperature of display according to time of day
 @author Manual by Mattias Andrée (maandree)
 
 @page
