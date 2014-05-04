@@ -438,6 +438,17 @@ transition=1
 ; a 0 transitions will be disabled. Setting this to
 ; 0 is equivalent to using the -r option.
 
+elevation-day=3.0
+; This line specifies that it is 100 % day when the
+; Sun's elevation is at 3 degrees above the horizon
+; or higher. This is the default value.
+
+elevation-night=-6.0
+; This line specifies that it is 100 % night when the
+; Sun's elevation is at 6 degrees below the horizon
+; or lower. This is the default value. This value
+; most be lower than that of `elevation-day'.
+
 preserve-calibrations=0
 ; This line specifies that we do not want to use the
 ; current calibrations as a base for our calibrations,
