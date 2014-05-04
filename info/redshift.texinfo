@@ -277,7 +277,7 @@ send it a SIGUSR1 signal to redshift:
 @command{pkill -USR1 redshift}. It will switch to
 either disabled or enabled mode depending on the current
 mode, while doing so it will perform a short transition.
-This is not possible in Windows due to the lack of the
+This is not possible in Windows because of the lack of the
 signal facility in POSIX systems.
 
 
@@ -290,8 +290,8 @@ output on any graphics card it may or may not be attached to
 a monitor; adjustments to disconnected outputs does not
 cause errors. The CRTC:s are index from 0, but you can also
 use the value @code{all} to select all available CRTC:s.
-But on Linux and BSD front it is a bit more complicated due
-to the additional capabilities.
+But on Linux and BSD front it is a bit more complicated
+because of the additional capabilities.
 
 When using DRM (the @option{drm} method) you have the
 options @option{card}, @option{crtc} and @option{edid}.
