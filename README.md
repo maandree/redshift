@@ -121,3 +121,11 @@ The program will not crash if it fails to get the
 user's entry in the passwd file. It also adds support
 for homeless users.
 
+### Customisable elevations
+Add `elevation-day` and `elevation-night` to
+redshift.conf. This lets the user change the timespan
+of the transitional period during twilight. There
+is one limitation: `elevation-day` cannot be set to
+a lower value than `elevation-night` to make the
+display more red during the day than during the night.
+
