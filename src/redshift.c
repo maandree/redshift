@@ -844,10 +844,10 @@ main(int argc, char *argv[])
 					brightness_night = atof(setting->value);
 				}
 			} else if (strcasecmp(setting->name,
-					      "elevation-day") == 0) {
+					      "elevation-high") == 0) {
 				transition_high = atof(setting->value);
 			} else if (strcasecmp(setting->name,
-					      "elevation-night") == 0) {
+					      "elevation-low") == 0) {
 				transition_low = atof(setting->value);
 			} else if (strcasecmp(setting->name, "gamma") == 0) {
 				if (gamma == NULL) {
@@ -965,10 +965,11 @@ main(int argc, char *argv[])
 		        printf(_("Location: %f, %f\n"), lat, lon);
 			printf(_("Temperatures: %dK at day, %dK at night\n"),
 			       temp_day, temp_night);
-			printf(_("Solar elevations: %f at day, %f at night\n"),
+		        /* TRANSLATORS: Append degree symbols if possible. */
+			printf(_("Solar elevations: day above %.1f, night below %.1f\n"),
 			       transition_high, transition_low);
 		}
-	
+
 		/* Latitude */
 		if (lat < MIN_LAT || lat > MAX_LAT) {
 		        /* TRANSLATORS: Append degree symbols if possible. */
@@ -1002,12 +1003,11 @@ main(int argc, char *argv[])
 				MIN_TEMP, MAX_TEMP);
 			exit(EXIT_FAILURE);
 		}
-	
 		/* Solar elevations */
-		if (transition_low >= transition_high) {
+		if (transition_high < transition_low) {
 		        fprintf(stderr,
-		                _("Solar elevation must be higher at night than at daytime.\n"),
-		                MIN_LAT, MAX_LAT);
+		                _("High transition elevation cannot be lower than"
+				  " the low transition elevation.\n"));
 		        exit(EXIT_FAILURE);
 		}
 	}
@@ -1266,8 +1266,10 @@ main(int argc, char *argv[])
 					(float)short_trans_len;
 
 				/* Stop transition when done */
-				if (adjustment_alpha <= 0.0 || adjustment_alpha >= 1.0)
+				if (adjustment_alpha <= 0.0 ||
+				    adjustment_alpha >= 1.0) {
 					short_trans_delta = 0;
+				}
 
 				/* Clamp alpha value */
 				adjustment_alpha =
