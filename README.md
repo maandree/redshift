@@ -6,16 +6,6 @@ Redshift reads environment variables to figure
 out which adjustment method to use if not method
 has been selected.
 
-### Fix dayness jump on transition direction switch
-If you send a signal to redshift to exit or toggle
-while it is in the progress of a transition it will
-jump to the end of that transition and then start
-the new transition. This bug has been fix.
-
-### Do not update the gamma ramps while disabled
-Whne you have sent SIGUSR1 to redshift to disable it, it
-will no longer reset the gamma ramps every fifth second.
-
 ### Reading output of external commands to get configurations
 This feature will probably not be merge into the mainline.
 
@@ -120,12 +110,4 @@ as will as to be able to test the original implemention.
 The program will not crash if it fails to get the
 user's entry in the passwd file. It also adds support
 for homeless users.
-
-### Customisable elevations
-Add `elevation-day` and `elevation-night` to
-redshift.conf. This lets the user change the timespan
-of the transitional period during twilight. There
-is one limitation: `elevation-day` cannot be set to
-a lower value than `elevation-night` to make the
-display more red during the day than during the night.
 
