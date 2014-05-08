@@ -447,7 +447,10 @@ elevation-night=-6.0
 ; This line specifies that it is 100 % night when the
 ; Sun's elevation is at 6 degrees below the horizon
 ; or lower. This is the default value. This value
-; most be lower than that of `elevation-day'.
+; most be lower than that of `elevation-day' or of
+; equal value. If the value is equal to that of
+; `elevation-day' there will be no transition between
+; the settings.
 
 preserve-calibrations=0
 ; This line specifies that we do not want to use the
