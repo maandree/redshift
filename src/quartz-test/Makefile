@@ -10,7 +10,7 @@ test: fake-quartz.c test.c fake-quartz.h
 else
 # OS X
 test: test.c
-	$(CC) -g -framework CoreGraphics -std=c99 -o $@ test.c
+	$(CC) -g -I/System/Library/Frameworks/ApplicationServices.framework/Versions/A/Frameworks/CoreGraphics.framework/Versions/A/Headers -F/System/Library/Frameworks/ApplicationServices.framework -framework ApplicationServices -std=c99 -o $@ $<
 
 endif
 
