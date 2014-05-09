@@ -56,6 +56,7 @@ int
 gamma_dummy_init(gamma_server_state_t *state)
 {
 	int r;
+	fprintf(stderr, "[gamma-dummy] Initialising\n");
 	r = gamma_init(state);
 	if (r != 0) return r;
 	state->data = NULL;
@@ -67,6 +68,7 @@ gamma_dummy_init(gamma_server_state_t *state)
 int
 gamma_dummy_start(gamma_server_state_t *state)
 {
+	fprintf(stderr, "[gamma-dummy] Starting\n");
 	(void) state;
 	fputs(_("WARNING: Using dummy gamma method! "
 		"Display will not be affected by this gamma method.\n"),

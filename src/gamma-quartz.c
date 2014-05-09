@@ -55,6 +55,7 @@ quartz_open_site(gamma_server_state_t *state, char *site, gamma_site_state_t *si
 	(void) site;
 	site_out->data = NULL;
 	site_out->partitions_available = 1;
+	fprintf(stderr, "[gamma-quartz] Opening site\n");
 	return 0;
 }
 
@@ -68,6 +69,7 @@ quartz_open_partition(gamma_server_state_t *state, gamma_site_state_t *site,
 
 	partition_out->data = NULL;
 	partition_out->crtcs_available = 0;
+	fprintf(stderr, "[gamma-quartz] Opening partition\n");
 
 	uint32_t cap = 4;
 	CGDirectDisplayID *crtcs = malloc((size_t)cap * sizeof(CGDirectDisplayID));
@@ -81,6 +83,7 @@ quartz_open_partition(gamma_server_state_t *state, gamma_site_state_t *site,
 	uint32_t crtc_count;
 	while (1) {
 		r = CGGetOnlineDisplayList(cap, crtcs, &crtc_count);
+		fprintf(stderr, "[gamma-quartz] Found %u CRTCS\n", crtc_count);
 		if (r != kCGErrorSuccess) {
 			fputs(_("Cannot get list of online displays.\n"), stderr);
 			free(crtcs);
@@ -106,6 +109,7 @@ quartz_open_partition(gamma_server_state_t *state, gamma_site_state_t *site,
 
 	partition_out->data = crtcs;
 	partition_out->crtcs_available = (size_t)crtc_count;
+	fprintf(stderr, "[gamma-quartz] Found %u CRTCS (done)\n", crtc_count);
 
 	return 0;
 }
@@ -119,6 +123,7 @@ quartz_open_crtc(gamma_server_state_t *state, gamma_site_state_t *site,
 
 	CGDirectDisplayID *crtcs = partition->data;
 	CGDirectDisplayID crtc_id = crtcs[crtc];
+	fprintf(stderr, "[gamma-quartz] Opening CRTC %lu\n", crtc);
 
 	crtc_out->data = NULL;
 	crtc_out->saved_ramps.red = NULL;
@@ -130,6 +135,7 @@ quartz_open_crtc(gamma_server_state_t *state, gamma_site_state_t *site,
 			crtc);
 		return -1;
 	}
+	fprintf(stderr, "[gamma-quartz] Gamma ramp size (query): %lu\n", gamma_size);
 
 	/* Specify gamma ramp dimensions. */
 	crtc_out->saved_ramps.red_size = gamma_size;
@@ -169,6 +175,19 @@ quartz_open_crtc(gamma_server_state_t *state, gamma_site_state_t *site,
 				  "I do not know what is real anymore.\n"));
 		return -1;
 	}
+	fprintf(stderr, "[gamma-quartz] Gamma ramp size (output): %lu\n", gamma_size);
+
+	fprintf(stderr, "[gamma-quartz] Current red   gamma ramp (every 51:th):");
+	for (size_t i = 0; i < gamma_size; i += 51)  fprintf(stderr, " %.2f", (float)(red[i]));
+	fprintf(stderr, "\n");
+
+	fprintf(stderr, "[gamma-quartz] Current green gamma ramp (every 51:th):");
+	for (size_t i = 0; i < gamma_size; i += 51)  fprintf(stderr, " %.2f", (float)(green[i]));
+	fprintf(stderr, "\n");
+
+	fprintf(stderr, "[gamma-quartz] Current blue  gamma ramp (every 51:th):");
+	for (size_t i = 0; i < gamma_size; i += 51)  fprintf(stderr, " %.2f", (float)(blue[i]));
+	fprintf(stderr, "\n");
 
 	/* Convert current gamma ramps to integer format. */
 	for (size_t c = 0; c < 3; c++) {
@@ -186,6 +205,8 @@ quartz_open_crtc(gamma_server_state_t *state, gamma_site_state_t *site,
 static int
 quartz_set_ramps(gamma_server_state_t *state, gamma_crtc_state_t *crtc, gamma_ramps_t ramps)
 {
+	fprintf(stderr, "[gamma-quartz] Using CRTC %i\n", crtc->crtc);
+
 	CGDirectDisplayID *crtcs = state->sites->partitions->data;
 	CGDirectDisplayID crtc_id = crtcs[crtc->crtc];
 	size_t gamma_size = ramps.red_size;
@@ -195,6 +216,18 @@ quartz_set_ramps(gamma_server_state_t *state, gamma_crtc_state_t *crtc, gamma_ra
 	CGGammaValue *green = red_green_blue + 1 * gamma_size;
 	CGGammaValue *blue  = red_green_blue + 2 * gamma_size;
 
+	fprintf(stderr, "[gamma-quartz] New red   gamma ramp (every 51:th):");
+	for (size_t i = 0; i < gamma_size; i += 51)  fprintf(stderr, " %4x", (crtc->current_ramps.red + 0 * gamma_size)[i]);
+	fprintf(stderr, "\n");
+
+	fprintf(stderr, "[gamma-quartz] New green gamma ramp (every 51:th):");
+	for (size_t i = 0; i < gamma_size; i += 51)  fprintf(stderr, " %4x", (crtc->current_ramps.red + 1 * gamma_size)[i]);
+	fprintf(stderr, "\n");
+
+	fprintf(stderr, "[gamma-quartz] New blue  gamma ramp (every 51:th):");
+	for (size_t i = 0; i < gamma_size; i += 51)  fprintf(stderr, " %4x", (crtc->current_ramps.red + 2 * gamma_size)[i]);
+	fprintf(stderr, "\n");
+
 	/* Convert pending gamma ramps to float format. */
 	for (size_t c = 0; c < 3; c++) {
 		uint16_t     *ramp_int   = crtc->current_ramps.red + c * gamma_size;
@@ -203,6 +236,18 @@ quartz_set_ramps(gamma_server_state_t *state, gamma_crtc_state_t *crtc, gamma_ra
 		        ramp_float[i] = (CGGammaValue)(ramp_int[i]) / UINT16_MAX;
 	}
 
+	fprintf(stderr, "[gamma-quartz] New red   gamma ramp (every 51:th):");
+	for (size_t i = 0; i < gamma_size; i += 51)  fprintf(stderr, " %.2f", (float)(red[i]));
+	fprintf(stderr, "\n");
+
+	fprintf(stderr, "[gamma-quartz] New green gamma ramp (every 51:th):");
+	for (size_t i = 0; i < gamma_size; i += 51)  fprintf(stderr, " %.2f", (float)(green[i]));
+	fprintf(stderr, "\n");
+
+	fprintf(stderr, "[gamma-quartz] New blue  gamma ramp (every 51:th):");
+	for (size_t i = 0; i < gamma_size; i += 51)  fprintf(stderr, " %.2f", (float)(blue[i]));
+	fprintf(stderr, "\n");
+
 	/* Apply gamma ramps. */
 	CGError r = CGSetDisplayTransferByTable(crtc_id, (uint32_t)gamma_size, red, green, blue);
 	if (r != kCGErrorSuccess) {
@@ -210,6 +255,7 @@ quartz_set_ramps(gamma_server_state_t *state, gamma_crtc_state_t *crtc, gamma_ra
 		return -1;
 	}
 
+	fprintf(stderr, "[gamma-quartz] New gamma ramps has been set.\n");
 	return 0;
 }
 
@@ -239,6 +285,7 @@ int
 quartz_init(gamma_server_state_t *state)
 {
 	int r;
+	fprintf(stderr, "[gamma-quartz] Initialising\n");
 	r = gamma_init(state);
 	if (r != 0) return r;
 
@@ -256,6 +303,7 @@ quartz_init(gamma_server_state_t *state)
 int
 quartz_start(gamma_server_state_t *state)
 {
+	fprintf(stderr, "[gamma-quartz] Starting\n");
 	return gamma_resolve_selections(state);
 }
 
