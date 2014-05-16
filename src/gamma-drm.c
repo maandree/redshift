@@ -292,23 +292,9 @@ static int
 drm_set_option(gamma_server_state_t *state, const char *key, char *value, ssize_t section)
 {
 	if (strcasecmp(key, "card") == 0) {
-		ssize_t card = strcasecmp(value, "all") ? (ssize_t)atoi(value) : -1;
-		if (card < 0 && strcasecmp(value, "all")) {
-			/* TRANSLATORS: `all' must not be translated. */
-			fprintf(stderr, _("Card must be `all' or a non-negative integer.\n"));
-			return -1;
-		}
-		on_selections({ sel->partition = card; });
-		return 0;
+		return gamma_select_partitions(state, value, ',', section, _("Card"));
 	} else if (strcasecmp(key, "crtc") == 0) {
-		ssize_t crtc = strcasecmp(value, "all") ? (ssize_t)atoi(value) : -1;
-		if (crtc < 0 && strcasecmp(value, "all")) {
-			/* TRANSLATORS: `all' must not be translated. */
-			fprintf(stderr, _("CRTC must be `all' or a non-negative integer.\n"));
-			return -1;
-		}
-		on_selections({ sel->crtc = crtc; });
-		return 0;
+		return gamma_select_crtcs(state, value, ',', section, _("CRTC"));
 	} else if (strcasecmp(key, "edid") == 0) {
 		uint32_t edid_length = (uint32_t)(strlen(value));
 		if (edid_length == 0 || edid_length % 2 != 0) {
@@ -522,8 +508,8 @@ drm_print_help(FILE *f)
 
 	/* TRANSLATORS: DRM help output
 	   left column must not be translated */
-	fputs(_("  crtc=N\tCRTC to apply adjustments to\n"
-		"  edid=VALUE\tThe EDID of the monitor to apply adjustments to\n"
+	fputs(_("  edid=VALUE\tThe EDID of the monitor to apply adjustments to\n"
+		"  crtc=N\tCRTC to apply adjustments to\n"
 		"  card=N\tGraphics card to apply adjustments to\n"), f);
 	fputs("\n", f);
 }
