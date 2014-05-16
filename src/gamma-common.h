@@ -135,10 +135,13 @@ struct gamma_selection_state {
 	/* Whether the selection can be ignored if it fails. */
 	int ignorable;
 	/* The CRTC and partition (e.g. screen) indices. */
-	ssize_t crtc;
-	ssize_t partition;
-	/* The site identifier. */
-	char *site;
+	size_t *crtcs;
+	size_t crtcs_count;
+	size_t *partitions;
+	size_t partitions_count;
+	/* The site identifiers. */
+	char **sites;
+	size_t sites_count;
 	/* Color adjustments. */
 	gamma_settings_t settings;
 };
