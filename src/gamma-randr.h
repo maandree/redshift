@@ -49,6 +49,8 @@ typedef struct {
 } randr_selection_data_t;
 
 
+int randr_auto(void);
+
 int randr_init(gamma_server_state_t *state);
 int randr_start(gamma_server_state_t *state);
 
