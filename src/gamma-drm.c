@@ -300,23 +300,9 @@ static int
 drm_set_option(gamma_server_state_t *state, const char *key, char *value, ssize_t section)
 {
 	if (strcasecmp(key, "card") == 0) {
-		ssize_t card = strcasecmp(value, "all") ? (ssize_t)atoi(value) : -1;
-		if (card < 0 && strcasecmp(value, "all")) {
-			/* TRANSLATORS: `all' must not be translated. */
-			fprintf(stderr, _("Card must be `all' or a non-negative integer.\n"));
-			return -1;
-		}
-		on_selections({ sel->partition = card; });
-		return 0;
+		return gamma_select_partitions(state, value, ',', section, _("Card"));
 	} else if (strcasecmp(key, "crtc") == 0) {
-		ssize_t crtc = strcasecmp(value, "all") ? (ssize_t)atoi(value) : -1;
-		if (crtc < 0 && strcasecmp(value, "all")) {
-			/* TRANSLATORS: `all' must not be translated. */
-			fprintf(stderr, _("CRTC must be `all' or a non-negative integer.\n"));
-			return -1;
-		}
-		on_selections({ sel->crtc = crtc; });
-		return 0;
+		return gamma_select_crtcs(state, value, ',', section, _("CRTC"));
 	} else if (strcasecmp(key, "edid") == 0) {
 		uint32_t edid_length = (uint32_t)(strlen(value));
 		if (edid_length == 0 || edid_length % 2 != 0) {
@@ -387,17 +373,20 @@ drm_parse_selection(gamma_server_state_t *state, gamma_site_state_t *site,
 	unsigned char *edid_seeked = selection_data->edid;
 	uint32_t edid_length = selection_data->edid_length;
 
-	gamma_partition_state_t *card_start;
-	gamma_partition_state_t *card_end;
-	if (selection->partition >= 0) {
-		card_start = site->partitions + selection->partition;
-		card_end = card_start + 1;
-	} else {
-		card_start = site->partitions;
-		card_end = card_start + site->partitions_available;
+	if (selection->partitions_count == 0) {
+		selection->partitions = malloc(site->partitions_available * sizeof(size_t));
+		if (selection->partitions == NULL) {
+			perror("malloc");
+			return -1;
+		}
+		selection->partitions_count = site->partitions_available;
+		for (size_t i = 0; i < selection->partitions_count; i++)
+			selection->partitions[i] = i;
 	}
 
-	for (gamma_partition_state_t *card = card_start; card != card_end; card++) {
+	for (size_t card_i = 0; card_i < selection->partitions_count; card_i++) {
+		size_t card_index = selection->partitions[card_i];
+		gamma_partition_state_t *card = site->partitions + card_index;
 		drm_card_data_t *card_data = card->data;
 		int fd = card_data->fd;
 		drmModeRes *res = card_data->res;
@@ -450,8 +439,20 @@ drm_parse_selection(gamma_server_state_t *state, gamma_site_state_t *site,
 							if (res->crtcs[crtc] == crtc_id)
 								break;
 
-						selection->crtc = crtc;
-						selection->partition = (ssize_t)(card - card_end);
+						selection->crtcs = malloc(sizeof(size_t));
+						if (selection->crtcs == NULL) {
+							perror("malloc");
+							return -1;
+						}
+						selection->crtcs[0] = (size_t)crtc;
+						selection->crtcs_count = 1;
+						selection->partitions = malloc(sizeof(size_t));
+						if (selection->partitions == NULL) {
+							perror("malloc");
+							return -1;
+						}
+						selection->partitions[0] = card_index;
+						selection->partitions_count = 1;
 
 						drmModeFreeEncoder(encoder);
 						drmModeFreeProperty(prop);
@@ -530,8 +531,8 @@ drm_print_help(FILE *f)
 
 	/* TRANSLATORS: DRM help output
 	   left column must not be translated */
-	fputs(_("  crtc=N\tCRTC to apply adjustments to\n"
-		"  edid=VALUE\tThe EDID of the monitor to apply adjustments to\n"
+	fputs(_("  edid=VALUE\tThe EDID of the monitor to apply adjustments to\n"
+		"  crtc=N\tCRTC to apply adjustments to\n"
 		"  card=N\tGraphics card to apply adjustments to\n"), f);
 	fputs("\n", f);
 }

@@ -223,19 +223,7 @@ static int
 quartz_set_option(gamma_server_state_t *state, const char *key, char *value, ssize_t section)
 {
 	if (strcasecmp(key, "crtc") == 0) {
-		ssize_t crtc = strcasecmp(value, "all") ? (ssize_t)atoi(value) : -1;
-		if (crtc < 0 && strcasecmp(value, "all")) {
-			/* TRANSLATORS: `all' must not be translated. */
-			fprintf(stderr, _("CRTC must be `all' or a non-negative integer.\n"));
-			return -1;
-		}
-		if (section >= 0) {
-			state->selections[section].crtc = crtc;
-		} else {
-			for (size_t i = 0; i < state->selections_made; i++)
-				state->selections[i].crtc = crtc;
-		}
-		return 0;
+		return gamma_select_crtcs(state, value, ',', section, _("CRTC"));
 	}
 	return 1;
 }

@@ -135,10 +135,13 @@ struct gamma_selection_state {
 	/* Whether the selection can be ignored if it fails. */
 	int ignorable;
 	/* The CRTC and partition (e.g. screen) indices. */
-	ssize_t crtc;
-	ssize_t partition;
-	/* The site identifier. */
-	char *site;
+	size_t *crtcs;
+	size_t crtcs_count;
+	size_t *partitions;
+	size_t partitions_count;
+	/* The site identifiers. */
+	char **sites;
+	size_t sites_count;
 	/* Color adjustments. */
 	gamma_settings_t settings;
 	/* Whether or not to preserve initial calibrations. */
@@ -264,6 +267,17 @@ int parse_gamma_string(char *str, float gamma[3]);
 		for (; sel != sel_end; sel++)						\
 			INSTRUCTION							\
 	}
+
+/* Parse CRTC selection option. */
+int gamma_select_crtcs(gamma_server_state_t *state, char *value, char delimiter,
+		       ssize_t section, const char *name);
+
+/* Parse partition (e.g. screen) selection option. */
+int gamma_select_partitions(gamma_server_state_t *state, char *value, char delimiter,
+			    ssize_t section, const char *name);
+
+/* Parse site (e.g. display) selection option. */
+int gamma_select_sites(gamma_server_state_t *state, char *value, char delimiter, ssize_t section);
 
 
 #endif /* ! REDSHIFT_GAMMA_COMMON_H */

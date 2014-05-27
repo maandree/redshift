@@ -304,30 +304,11 @@ static int
 randr_set_option(gamma_server_state_t *state, const char *key, char *value, ssize_t section)
 {
 	if (strcasecmp(key, "screen") == 0) {
-		ssize_t screen = strcasecmp(value, "all") ? (ssize_t)atoi(value) : -1;
-		if (screen < 0 && strcasecmp(value, "all")) {
-			/* TRANSLATORS: `all' must not be translated. */
-			fprintf(stderr, _("Screen must be `all' or a non-negative integer.\n"));
-			return -1;
-		}
-		on_selections({ sel->partition = screen; });
-		return 0;
+		return gamma_select_partitions(state, value, ',', section, _("Screen"));
 	} else if (strcasecmp(key, "crtc") == 0) {
-		ssize_t crtc = strcasecmp(value, "all") ? (ssize_t)atoi(value) : -1;
-		if (crtc < 0 && strcasecmp(value, "all")) {
-			/* TRANSLATORS: `all' must not be translated. */
-			fprintf(stderr, _("CRTC must be `all' or a non-negative integer.\n"));
-			return -1;
-		}
-		on_selections({ sel->crtc = crtc; });
-		return 0;
+		return gamma_select_crtcs(state, value, ',', section, _("CRTC"));
 	} else if (strcasecmp(key, "display") == 0) {
-		on_selections({
-			sel->site = strdup(value);
-			if (sel->site == NULL)
-				goto strdup_fail;
-		});
-		return 0;
+		return gamma_select_sites(state, value, ',', section);
 	} else if (strcasecmp(key, "edid") == 0) {
 		int edid_length = (int)(strlen(value));
 		if (edid_length == 0 || edid_length % 2 != 0) {
@@ -432,7 +413,14 @@ randr_test_edid(xcb_connection_t *connection, xcb_randr_output_t output, xcb_ato
 		free(val_reply);
 
 		if (crtc < crtc_n) {
-			selection->crtc = (ssize_t)crtc;
+			free(selection->crtcs);
+			selection->crtcs = malloc(sizeof(size_t));
+			if (selection->crtcs == NULL) {
+				perror("malloc");
+				return -1;
+			}
+			selection->crtcs[0] = (size_t)crtc;
+			selection->crtcs_count = 1;
 		} else {
 			fputs(_("Monitor is not connected."), stderr);
 			return -1;
@@ -456,18 +444,20 @@ randr_parse_selection(gamma_server_state_t *state, gamma_site_state_t *site,
 
 	xcb_connection_t *connection = site->data;
 
-	/* Select screen to look in, only one will be used. */
-	gamma_partition_state_t *screen_start;
-	gamma_partition_state_t *screen_end;
-	if (selection->partition >= 0) {
-		screen_start = site->partitions + selection->partition;
-		screen_end = screen_start + 1;
-	} else {
-		screen_start = site->partitions;
-		screen_end = screen_start + site->partitions_available;
+	if (selection->partitions_count == 0) {
+		selection->partitions = malloc(site->partitions_available * sizeof(size_t));
+		if (selection->partitions == NULL) {
+			perror("malloc");
+			return -1;
+		}
+		selection->partitions_count = site->partitions_available;
+		for (size_t i = 0; i < selection->partitions_count; i++)
+			selection->partitions[i] = i;
 	}
 
-	for (gamma_partition_state_t *screen = screen_start; screen != screen_end; screen++) {
+	for (size_t screen_i = 0; screen_i < selection->partitions_count; screen_i++) {
+		size_t screen_index = selection->partitions[screen_i];
+		gamma_partition_state_t *screen = site->partitions + screen_index;
 		if (screen->used == 0)
 			continue;
 		randr_screen_data_t *screen_data = screen->data;
@@ -574,7 +564,14 @@ randr_parse_selection(gamma_server_state_t *state, gamma_site_state_t *site,
 						free(prop_reply);
 						free(out_reply);
 						free(res_reply);
-						selection->partition = (ssize_t)(screen - screen_start);
+						free(selection->partitions);
+						selection->partitions = malloc(sizeof(ssize_t));
+						if (selection->partitions == NULL) {
+							perror("malloc");
+							return -1;
+						}
+						selection->partitions[0] = screen_index;
+						selection->partitions_count = 1;
 						return r;
 					}
 				}
@@ -597,7 +594,6 @@ randr_init(gamma_server_state_t *state)
 	if (r != 0) return r;
 
 	state->selections->sizeof_data = sizeof(randr_selection_data_t);
-	state->selections->site        = getenv("DISPLAY") ? strdup(getenv("DISPLAY")) : NULL;
 	state->free_site_data          = randr_free_site;
 	state->free_partition_data     = randr_free_partition;
 	state->free_crtc_data          = randr_free_crtc;
@@ -609,10 +605,22 @@ randr_init(gamma_server_state_t *state)
 	state->set_option              = randr_set_option;
 	state->parse_selection         = randr_parse_selection;
 
-	if (getenv("DISPLAY") != NULL && state->selections->site == NULL) {
-		perror("strdup");
+	state->selections->sites = malloc(1 * sizeof(char *));
+	if (state->selections->sites == NULL) {
+		perror("malloc");
 		return -1;
 	}
+
+	if (getenv("DISPLAY") != NULL) {
+		state->selections->sites[0] = strdup(getenv("DISPLAY"));
+		if (state->selections->sites[0] == NULL) {
+			perror("strdup");
+			return -1;
+		}
+	} else {
+		state->selections->sites[0] = NULL;
+	}
+	state->selections->sites_count = 1;
 
 	return 0;
 }
@@ -631,9 +639,9 @@ randr_print_help(FILE *f)
 
 	/* TRANSLATORS: RANDR help output
 	   left column must not be translated */
-	fputs(_("  crtc=N\tCRTC to apply adjustments to\n"
-		"  edid=VALUE\tThe EDID of the monitor to apply adjustments to\n"
-		"  screen=N\tX screen to apply adjustments to\n"
-		"  display=NAME\tX display to apply adjustments to\n"), f);
+	fputs(_("  edid=VALUE\tThe EDID of the monitor to apply adjustments to\n"
+		"  crtc=N\tList of comma separated CRTCs to apply adjustments to\n"
+		"  screen=N\tList of comma separated X screens to apply adjustments to\n"
+		"  display=NAME\tList of comma separated X displays to apply adjustments to\n"), f);
 	fputs("\n", f);
 }
