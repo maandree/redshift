@@ -101,12 +101,7 @@ static const gamma_method_t gamma_methods[] = {
 	__method("drm", drm),
 #endif
 #ifdef ENABLE_QUARTZ
-	{
-		"quartz", 1,
-		(gamma_method_init_func *)quartz_init,
-		(gamma_method_start_func *)quartz_start,
-		(gamma_method_print_help_func *)quartz_print_help
-	},
+	__method("quartz", quartz),
 #endif
 #ifdef ENABLE_RANDR
 	__method("randr", randr),

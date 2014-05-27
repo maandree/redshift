@@ -35,6 +35,12 @@
 #include "gamma-quartz.h"
 
 
+int
+quartz_auto()
+{
+	return 1;
+}
+
 static void
 quartz_free_crtc(void *data)
 {
