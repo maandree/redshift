@@ -135,10 +135,3 @@ The `crtc`, `screen`, `card` and `display`
 options for the adjustment methods can now
 be comma-separated lists.
 
-### Improved error handling of user data
-Support unexpected events when the user's
-home directory is retrieved has been added.
-This includes events such as the user
-not exists (perhaps removed while logged in)
-or if her home directory is not listed.
-
