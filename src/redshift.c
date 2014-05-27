@@ -62,6 +62,10 @@
 # include "gamma-drm.h"
 #endif
 
+#ifdef ENABLE_QUARTZ
+# include "gamma-quartz.h"
+#endif
+
 #ifdef ENABLE_RANDR
 # include "gamma-randr.h"
 #endif
@@ -95,6 +99,14 @@
 static const gamma_method_t gamma_methods[] = {
 #ifdef ENABLE_DRM
 	__method("drm", drm),
+#endif
+#ifdef ENABLE_QUARTZ
+	{
+		"quartz", 1,
+		(gamma_method_init_func *)quartz_init,
+		(gamma_method_start_func *)quartz_start,
+		(gamma_method_print_help_func *)quartz_print_help
+	},
 #endif
 #ifdef ENABLE_RANDR
 	__method("randr", randr),
@@ -1092,6 +1104,10 @@ main(int argc, char *argv[])
 	case PROGRAM_MODE_ONE_SHOT:
 	case PROGRAM_MODE_PRINT:
 	{
+#ifdef __MACH__
+		systemtime_init();
+#endif
+
 		/* Current angular elevation of the sun */
 		double now;
 		r = systemtime_get_time(&now);
@@ -1131,6 +1147,10 @@ main(int argc, char *argv[])
 			gamma_free(&state);
 			exit(EXIT_FAILURE);
 		}
+
+#ifdef __MACH__
+		systemtime_close();
+#endif
 	}
 	break;
 	case PROGRAM_MODE_MANUAL:
@@ -1191,6 +1211,10 @@ main(int argc, char *argv[])
 		if (verbose) {
 			printf("Status: %s\n", "Enabled");
 		}
+
+#ifdef __MACH__
+		systemtime_init();
+#endif
 
 		/* Continuously adjust color temperature */
 		int done = 0;
@@ -1322,6 +1346,10 @@ main(int argc, char *argv[])
 
 		/* Restore saved gamma ramps */
 		gamma_restore(&state);
+
+#ifdef __MACH__
+		systemtime_close();
+#endif
 	}
 	break;
 	}
