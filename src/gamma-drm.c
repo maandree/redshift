@@ -365,17 +365,20 @@ drm_parse_selection(gamma_server_state_t *state, gamma_site_state_t *site,
 	unsigned char *edid_seeked = selection_data->edid;
 	uint32_t edid_length = selection_data->edid_length;
 
-	gamma_partition_state_t *card_start;
-	gamma_partition_state_t *card_end;
-	if (selection->partition >= 0) {
-		card_start = site->partitions + selection->partition;
-		card_end = card_start + 1;
-	} else {
-		card_start = site->partitions;
-		card_end = card_start + site->partitions_available;
+	if (selection->partitions_count == 0) {
+		selection->partitions = malloc(site->partitions_available * sizeof(size_t));
+		if (selection->partitions == NULL) {
+			perror("malloc");
+			return -1;
+		}
+		selection->partitions_count = site->partitions_available;
+		for (size_t i = 0; i < selection->partitions_count; i++)
+			selection->partitions[i] = i;
 	}
 
-	for (gamma_partition_state_t *card = card_start; card != card_end; card++) {
+	for (size_t card_i = 0; card_i < selection->partitions_count; card_i++) {
+		size_t card_index = selection->partitions[card_i];
+		gamma_partition_state_t *card = site->partitions + card_index;
 		drm_card_data_t *card_data = card->data;
 		int fd = card_data->fd;
 		drmModeRes *res = card_data->res;
@@ -428,8 +431,20 @@ drm_parse_selection(gamma_server_state_t *state, gamma_site_state_t *site,
 							if (res->crtcs[crtc] == crtc_id)
 								break;
 
-						selection->crtc = crtc;
-						selection->partition = (ssize_t)(card - card_end);
+						selection->crtcs = malloc(sizeof(size_t));
+						if (selection->crtcs == NULL) {
+							perror("malloc");
+							return -1;
+						}
+						selection->crtcs[0] = (size_t)crtc;
+						selection->crtcs_count = 1;
+						selection->partitions = malloc(sizeof(size_t));
+						if (selection->partitions == NULL) {
+							perror("malloc");
+							return -1;
+						}
+						selection->partitions[0] = card_index;
+						selection->partitions_count = 1;
 
 						drmModeFreeEncoder(encoder);
 						drmModeFreeProperty(prop);
