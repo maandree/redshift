@@ -520,8 +520,6 @@ gamma_resolve_selections(gamma_server_state_t *state)
 
 	for (size_t i = 1; i < state->selections_made; i++) {
 		gamma_selection_state_t *selection = state->selections + i;
-		int all_crtcs = selection->crtcs == NULL;
-		int all_partitions = selection->partitions == NULL;
 		gamma_site_state_t *site;
 		size_t site_index;
 
@@ -564,6 +562,7 @@ gamma_resolve_selections(gamma_server_state_t *state)
 					__ignorable return r;
 				}
 			}
+			int all_partitions = selection->partitions == NULL;
 
 			/* Select all partitions if none have been specified explicity. */
 			if (all_partitions && selection->partitions_count < site->partitions_available) {
@@ -598,6 +597,7 @@ gamma_resolve_selections(gamma_server_state_t *state)
 					__ignorable return r;
 				}
 			}
+			int all_crtcs = selection->crtcs == NULL;
 
 			/* Open CRTCs. */
 			for (size_t p = 0; p < selection->partitions_count; p++) {
