@@ -53,9 +53,11 @@ gamma_init(gamma_server_state_t *state)
 	}
 
 	/* Defaults selection. */
+	state->selections->data = NULL;
 	state->selections->crtc = -1;
 	state->selections->partition = -1;
 	state->selections->site = NULL;
+	state->selections->ignorable = 0;
 	state->selections->settings.gamma_correction[0] = DEFAULT_GAMMA;
 	state->selections->settings.gamma_correction[1] = DEFAULT_GAMMA;
 	state->selections->settings.gamma_correction[2] = DEFAULT_GAMMA;
@@ -74,9 +76,12 @@ gamma_free_selections(gamma_server_state_t *state)
 	size_t i;
 
 	/* Free data in each selection. */
-	for (i = 0; i < state->selections_made; i++)
+	for (i = 0; i < state->selections_made; i++) {
+		if (state->selections[i].data != NULL)
+			free(state->selections[i].data);
 		if (state->selections[i].site != NULL)
 			free(state->selections[i].site);
+	}
 	state->selections_made = 0;
 
 	/* Free the selection array. */
@@ -209,7 +214,11 @@ next_partition:
 	}
 	if (site_i == iterator->state->sites_used)
 		return 0;
-	if (iterator->state->sites[site_i].partitions[partition_i].used == 0) {
+	if (iterator->state->sites[site_i].partitions[partition_i].used == 0 ||
+	    iterator->state->sites[site_i].partitions[partition_i].crtcs_used == 0) {
+		/* Because of `state->parse_selection` and `ignorable`
+		   it is possible to have a partition that is initalised
+		   but not used. This is when used ≠ 0 but crtcs_used = 0. */
 		partition_i += 1;
 		goto next_partition;
 	}
@@ -256,12 +265,23 @@ gamma_resolve_selections(gamma_server_state_t *state)
 		state->selections--;
 	}
 
+
+#define __ignorable  if (selection->ignorable) continue; else
+
 	for (size_t i = 1; i < state->selections_made; i++) {
 		gamma_selection_state_t *selection = state->selections + i;
 		gamma_site_state_t *site;
 		size_t site_index;
 		size_t partition_start;
 		size_t partition_end;
+
+		/* Run site selection hook. */
+		if (selection->data != NULL) {
+			r = state->parse_selection(state, NULL, selection, before_site);
+			if (r < 0) {
+				__ignorable return r;
+			}
+		}
 
 		/* Find matching already opened site. */
 		site_index = gamma_find_site(state, selection->site);
@@ -290,7 +310,7 @@ gamma_resolve_selections(gamma_server_state_t *state)
 			r = state->open_site(state, selection->site, site);
 			if (r != 0) {
 				rc = r;
-				goto fail;
+				__ignorable goto fail;
 			}
 
 			/* Increment now (rather than earlier), so we do not get segfault on error. */
@@ -316,10 +336,18 @@ gamma_resolve_selections(gamma_server_state_t *state)
 			site = state->sites + site_index;
 		}
 
+		/* Run partition selection hook. */
+		if (selection->data != NULL) {
+			r = state->parse_selection(state, site, selection, before_partition);
+			if (r < 0) {
+				__ignorable return r;
+			}
+		}
+
 		/* Select partitions. */
 		if (selection->partition >= (ssize_t)(site->partitions_available)) {
 			state->invalid_partition(site, (size_t)(selection->partition));
-			goto fail;
+			__ignorable goto fail;
 		}
 		partition_start = selection->partition < 0 ? 0 : (size_t)(selection->partition);
 		partition_end = selection->partition < 0 ? site->partitions_available : partition_start + 1;
@@ -330,16 +358,28 @@ gamma_resolve_selections(gamma_server_state_t *state)
 
 			r = state->open_partition(state, site, p, partition);
 			if (r != 0) {
-				rc = r;
-				goto fail;
+				__ignorable {
+					rc = r;
+					goto fail;
+				}
 			}
 
 			partition->used = 1;
 		}
 
+		/* Run CRTC selection hook. */
+		if (selection->data != NULL) {
+			r = state->parse_selection(state, site, selection, before_crtc);
+			if (r < 0) {
+				__ignorable return r;
+			}
+		}
+
 		/* Open CRTCs. */
 		for (size_t p = partition_start; p < partition_end; p++) {
 			gamma_partition_state_t *partition = site->partitions + p;
+			if (partition->used == 0) continue;
+
 			size_t crtc_start = selection->crtc < 0 ? 0 : (size_t)(selection->crtc);
 			size_t crtc_end = selection->crtc < 0 ? partition->crtcs_available : crtc_start + 1;
 
@@ -352,7 +392,7 @@ gamma_resolve_selections(gamma_server_state_t *state)
 				} else {
 					fprintf(stderr, _("Only CRTC 0 exists.\n"));
 				}
-				return -1;
+				__ignorable return -1;
 			}
 
 			/* Grow array with selected CRTCs, we temporarily store
@@ -377,8 +417,10 @@ gamma_resolve_selections(gamma_server_state_t *state)
 
 				r = state->open_crtc(state, site, partition, c, crtc);
 				if (r != 0) {
-					rc = r;
-					goto fail;
+					__ignorable {
+						rc = r;
+						goto fail;
+					  }
 				}
 				crtc->crtc = c;
 				crtc->partition = p;
@@ -405,6 +447,8 @@ gamma_resolve_selections(gamma_server_state_t *state)
 			}
 		}
 	}
+
+#undef __ignorable
 
 	rc = 0;
 
@@ -560,6 +604,16 @@ gamma_set_option(gamma_server_state_t *state, const char *key, char *value, ssiz
 				return -1;
 			}
 		}
+		if (state->selections->data != NULL) {
+			state->selections[section].data = malloc(state->selections->sizeof_data);
+			if (state->selections[section].data == NULL) {
+				perror("malloc");
+				return -1;
+			}
+			memcpy(state->selections[section].data,
+			       state->selections->data,
+			       state->selections->sizeof_data);
+		}
 
 		/* Increment this last, so we do not get segfault on error. */
 		state->selections_made += 1;
@@ -591,17 +645,20 @@ gamma_set_option(gamma_server_state_t *state, const char *key, char *value, ssiz
 			return -1;
 		}
 #endif
-		if (section >= 0) {
-			state->selections[section].settings.gamma_correction[0] = gamma[0];
-			state->selections[section].settings.gamma_correction[1] = gamma[1];
-			state->selections[section].settings.gamma_correction[2] = gamma[2];
-		} else {
-			for (size_t i = 0; i < state->selections_made; i++) {
-				state->selections[i].settings.gamma_correction[0] = gamma[0];
-				state->selections[i].settings.gamma_correction[1] = gamma[1];
-				state->selections[i].settings.gamma_correction[2] = gamma[2];
-			}
+		on_selections({
+			sel->settings.gamma_correction[0] = gamma[0];
+			sel->settings.gamma_correction[1] = gamma[1];
+			sel->settings.gamma_correction[2] = gamma[2];
+		});
+	} else if (strcasecmp(key, "ignorable") == 0) {
+		int int_value = atoi(value);
+		if (int_value != 0 && int_value != 1) {
+			/* TRANSLATORS: `ignorable' must not be translated. */
+			fprintf(stderr,
+				_("The value for `ignorable' must be either `1' or `0'.\n"));
+			return -1;
 		}
+		on_selections({ sel->ignorable = int_value; });
 	} else {
 		r = state->set_option(state, key, value, section);
 		if (r <= 0)
