@@ -112,9 +112,9 @@ user's entry in the passwd file. It also adds support
 for homeless users.
 
 ### Better signal support in redshift-gtk
-If redshift-gtk receives SIGUSR1 it is relayed
-to redshift, and if it receives SIGINT it exits
-cleanly which also fixes a bug where redshift-gtk
+If `redshift-gtk` receives SIGUSR1 it is relayed
+to `redshift`, and if it receives SIGINT it exits
+cleanly which also fixes a bug where `redshift-gtk`
 consumes 100 % of one CPU if Control-c is pressed.
 
 ### Removal of AppIndicator warning
