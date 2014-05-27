@@ -62,8 +62,12 @@ gamma_init(gamma_server_state_t *state)
 	state->selections->settings.gamma_correction[1] = DEFAULT_GAMMA;
 	state->selections->settings.gamma_correction[2] = DEFAULT_GAMMA;
 	state->selections->settings.gamma = DEFAULT_GAMMA;
+	state->selections->settings.lut_calibration = NULL;
 	state->selections->settings.brightness = DEFAULT_BRIGHTNESS;
 	state->selections->settings.temperature = NEUTRAL_TEMP;
+	state->selections->settings.lut_pre = NULL;
+	state->selections->settings.lut_post = NULL;
+	state->selections->preserve_calibrations = 0;
 
 	return 0;
 }
@@ -115,6 +119,18 @@ gamma_free(gamma_server_state_t *state)
 			/* Free each CRTC. */
 			for (c = 0; c < partition->crtcs_used; c++) {
 				crtc = partition->crtcs + c;
+
+				/* Free lookup tables with adjustments. */
+				if (crtc->settings.lut_pre != NULL) {
+					if (crtc->settings.lut_pre->red != NULL)
+						free(crtc->settings.lut_pre->red);
+					free(crtc->settings.lut_pre);
+				}
+				if (crtc->settings.lut_post != NULL) {
+					if (crtc->settings.lut_post->red != NULL)
+						free(crtc->settings.lut_post->red);
+					free(crtc->settings.lut_post);
+				}
 
 				/* Free gamma ramps. */
 				if (crtc->saved_ramps.red != NULL)
@@ -430,6 +446,10 @@ gamma_resolve_selections(gamma_server_state_t *state)
 				/* Store adjustment settigns. */
 				crtc->settings = selection->settings;
 
+				/* Preserve initial calibrations. */
+				if (selection->preserve_calibrations)
+					crtc->settings.lut_calibration = &(crtc->saved_ramps);
+
 				/* Create crtc->current_ramps. */
 				crtc->current_ramps = crtc->saved_ramps;
 				total_ramp_size += rrs = crtc->current_ramps.red_size;
@@ -619,7 +639,22 @@ gamma_set_option(gamma_server_state_t *state, const char *key, char *value, ssiz
 		state->selections_made += 1;
 	}
 
-	if (strcasecmp(key, "gamma") == 0) {
+
+	if (strcasecmp(key, "preserve-calibrations") == 0) {
+		int int_value = atoi(value);
+		if (int_value != 0 && int_value != 1) {
+			/* TRANSLATORS: `preserve-calibrations' must not be translated. */
+			fprintf(stderr,
+				_("The value for `preserve-calibrations' must be either `1' or `0'.\n"));
+			return -1;
+		}
+		if (section >= 0) {
+			state->selections[section].preserve_calibrations = int_value;
+		} else {
+			for (size_t i = 0; i < state->selections_made; i++)
+				state->selections[i].preserve_calibrations = int_value;
+		}
+	} else if (strcasecmp(key, "gamma") == 0) {
 		float gamma[3];
 		if (parse_gamma_string(value, gamma) < 0) {
 			fputs(_("Malformed gamma setting.\n"),
