@@ -122,7 +122,7 @@ redshift-gtk no longer prints an error message
 if AppIndicator3 cannot be loaded.
 
 ### Better output of the user's locations
-The user's location is printed with N/S–W/E
+The user's location is printed with N/S–E/W
 suffixes instead of being either negative
 if the user is on the south hemisphere or
 on the west side of the prime meridian.
