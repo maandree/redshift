@@ -407,7 +407,14 @@ randr_test_edid(xcb_connection_t *connection, xcb_randr_output_t output, xcb_ato
 		free(val_reply);
 
 		if (crtc < crtc_n) {
-			selection->crtc = (ssize_t)crtc;
+			free(selection->crtcs);
+			selection->crtcs = malloc(sizeof(size_t));
+			if (selection->crtcs == NULL) {
+				perror("malloc");
+				return -1;
+			}
+			selection->crtcs[0] = (size_t)crtc;
+			selection->crtcs_count = 1;
 		} else {
 			fputs(_("Monitor is not connected."), stderr);
 			return -1;
@@ -431,18 +438,20 @@ randr_parse_selection(gamma_server_state_t *state, gamma_site_state_t *site,
 
 	xcb_connection_t *connection = site->data;
 
-	/* Select screen to look in, only one will be used. */
-	gamma_partition_state_t *screen_start;
-	gamma_partition_state_t *screen_end;
-	if (selection->partition >= 0) {
-		screen_start = site->partitions + selection->partition;
-		screen_end = screen_start + 1;
-	} else {
-		screen_start = site->partitions;
-		screen_end = screen_start + site->partitions_available;
+	if (selection->partitions_count == 0) {
+		selection->partitions = malloc(site->partitions_available * sizeof(size_t));
+		if (selection->partitions == NULL) {
+			perror("malloc");
+			return -1;
+		}
+		selection->partitions_count = site->partitions_available;
+		for (size_t i = 0; i < selection->partitions_count; i++)
+			selection->partitions[i] = i;
 	}
 
-	for (gamma_partition_state_t *screen = screen_start; screen != screen_end; screen++) {
+	for (size_t screen_i = 0; screen_i < selection->partitions_count; screen_i++) {
+		size_t screen_index = selection->partitions[screen_i];
+		gamma_partition_state_t *screen = site->partitions + screen_index;
 		if (screen->used == 0)
 			continue;
 		randr_screen_data_t *screen_data = screen->data;
@@ -549,7 +558,14 @@ randr_parse_selection(gamma_server_state_t *state, gamma_site_state_t *site,
 						free(prop_reply);
 						free(out_reply);
 						free(res_reply);
-						selection->partition = (ssize_t)(screen - screen_start);
+						free(selection->partitions);
+						selection->partitions = malloc(sizeof(ssize_t));
+						if (selection->partitions == NULL) {
+							perror("malloc");
+							return -1;
+						}
+						selection->partitions[0] = screen_index;
+						selection->partitions_count = 1;
 						return r;
 					}
 				}
