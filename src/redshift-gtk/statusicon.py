@@ -29,15 +29,15 @@ import re
 import gettext
 
 from gi.repository import Gdk, Gtk, GLib
+STDERR_FILENO = sys.stderr.fileno()
+fd = os.dup(STDERR_FILENO)
+os.close(STDERR_FILENO)
 try:
-    STDERR_FILENO = sys.stderr.fileno()
-    fd = os.dup(STDERR_FILENO)
-    os.close(STDERR_FILENO)
     from gi.repository import AppIndicator3 as appindicator
-    os.dup2(fd, STDERR_FILENO)
-    os.close(fd)
 except ImportError:
     appindicator = None
+os.dup2(fd, STDERR_FILENO)
+os.close(fd)
 
 from . import defs
 from . import utils
