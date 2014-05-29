@@ -135,3 +135,14 @@ The `crtc`, `screen`, `card` and `display`
 options for the adjustment methods can now
 be comma-separated lists.
 
+### Mode switch hooks
+The `[hooks]` section has been added to `redshift.conf`
+In this section valid key names are `day`, `night` and
+`twilight`. Valid value as `sh`-syntax commands.
+`day` hooks will be executed when `redshift` enters or
+starts at full daytime solar elevation, and `night`
+hooks will be executed when `redshift` enters or starts
+at full night solar elevation. `twilight` hooks will be
+executed when `redshift` enters or starts at a transtition
+period between daytime and night.
+
