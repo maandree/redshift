@@ -50,6 +50,7 @@
 #include "adjustments.h"
 #include "opt-parser.h"
 #include "gamma-common.h"
+#include "hooks.h"
 
 
 #define MIN(x,y)  ((x) < (y) ? (x) : (y))
@@ -902,6 +903,29 @@ main(int argc, char *argv[])
 		}
 	}
 
+	/* Read hooks. */
+	section = config_ini_get_section(&config_state, "hooks");
+	if (section != NULL) {
+		config_ini_setting_t *setting = section->settings;
+		for (; setting != NULL; setting = setting->next) {
+			int hook_event;
+			if (strcasecmp(setting->name, "day") == 0) {
+				hook_event = HOOK_DAY;
+			} else if (strcasecmp(setting->name, "night") == 0) {
+				hook_event = HOOK_NIGHT;
+			} else if (strcasecmp(setting->name, "twilight") == 0) {
+				hook_event = HOOK_TWILIGHT;
+			} else {
+				fprintf(stderr, _("Unknown hook `%s'.\n"),
+					setting->name);
+				continue;
+			}
+			r = add_hook(hook_event, setting->value);
+			if (r < 0)
+				exit(EXIT_FAILURE);
+		}
+	}
+
 	/* Use default values for settings that were neither defined in
 	   the config file nor on the command line. */
 	if (temp_day < 0) temp_day = DEFAULT_DAY_TEMP;
@@ -1175,6 +1199,8 @@ main(int argc, char *argv[])
 	break;
 	case PROGRAM_MODE_CONTINUAL:
 	{
+		int hook_event = -1;
+
 		/* Make an initial transition from 6500K */
 		int short_trans_delta = -1;
 		int short_trans_len = 10;
@@ -1327,6 +1353,16 @@ main(int argc, char *argv[])
 					gamma_free(&state);
 					exit(EXIT_FAILURE);
 				}
+
+				int new_hook_event = HOOK_TWILIGHT;
+				if (elevation >= 1.0)
+					new_hook_event = HOOK_DAY;
+				else if (elevation <= 0.0)
+					new_hook_event = HOOK_NIGHT;
+				if (hook_event != new_hook_event) {
+					hook_event = new_hook_event;
+					run_hooks(hook_event, verbose);
+				}
 			}
 
 			/* Sleep for 5 seconds or 0.1 second. */
@@ -1358,5 +1394,6 @@ main(int argc, char *argv[])
 	if (provider_args != NULL)
 		free(provider_args);
 
+	free_hooks();
 	return EXIT_SUCCESS;
 }
