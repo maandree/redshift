@@ -1355,9 +1355,9 @@ main(int argc, char *argv[])
 				}
 
 				int new_hook_event = HOOK_TWILIGHT;
-				if (elevation >= 1.0)
+				if (elevation >= transition_high)
 					new_hook_event = HOOK_DAY;
-				else if (elevation <= 0.0)
+				else if (elevation <= transition_low)
 					new_hook_event = HOOK_NIGHT;
 				if (hook_event != new_hook_event) {
 					hook_event = new_hook_event;
