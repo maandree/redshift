@@ -1252,9 +1252,8 @@ main(int argc, char *argv[])
 					settings_copy(&old_settings, &settings);
 					reloading = 1;
 					reload_trans = 0;
-				} else {
-					settings_copy(&settings, &new_settings);
 				}
+				settings_copy(&settings, &new_settings);
 				
 				if (verbose) {
 				        /* TRANSLATORS: Append degree symbols if possible. */
