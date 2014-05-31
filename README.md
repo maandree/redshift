@@ -158,3 +158,10 @@ The time points are calculated an interative method and it will
 say that the will never occur / has never occurred if no satisfying
 point in time can be found within the span of one year.
 
+### When SIGUSR2 is received settings are reloaded
+When SIGUSR2 is received settings are reloaded. These settings
+are currently limited to settings that do not affect location
+providers and adjustment methods. Transition to the new settings
+are used if the line `reload-transition=0` does not appear in
+`redshift.conf`.
+
