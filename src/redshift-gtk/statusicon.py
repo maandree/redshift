@@ -27,6 +27,7 @@ import sys, os
 import signal, fcntl
 import re
 import gettext
+import datetime
 
 from gi.repository import Gdk, Gtk, GLib
 try:
@@ -51,6 +52,10 @@ class RedshiftStatusIcon(object):
         self._temperature = 0
         self._period = 'Unknown'
         self._location = (0.0, 0.0)
+        self._previous_sunrise = ('Previous sunrise', 'never')
+        self._next_sunrise = ('Next sunrise', 'never')
+        self._past_twilight = ('Twilight ended', 'never')
+        self._future_twilight = ('Twilight starts', 'never')
 
         # Install TERM signal handler
         signal.signal(signal.SIGTERM, sigterm_handler)
@@ -146,6 +151,30 @@ class RedshiftStatusIcon(object):
         self.period_label.set_padding(6, 6);
         self.info_dialog.get_content_area().pack_start(self.period_label, True, True, 0)
         self.period_label.show()
+
+        self.previous_sunrise_label = Gtk.Label()
+        self.previous_sunrise_label.set_alignment(0.0, 0.5)
+        self.previous_sunrise_label.set_padding(6, 6);
+        self.info_dialog.get_content_area().pack_start(self.previous_sunrise_label, True, True, 0)
+        self.previous_sunrise_label.show()
+
+        self.next_sunrise_label = Gtk.Label()
+        self.next_sunrise_label.set_alignment(0.0, 0.5)
+        self.next_sunrise_label.set_padding(6, 6);
+        self.info_dialog.get_content_area().pack_start(self.next_sunrise_label, True, True, 0)
+        self.next_sunrise_label.show()
+
+        self.past_twilight_label = Gtk.Label()
+        self.past_twilight_label.set_alignment(0.0, 0.5)
+        self.past_twilight_label.set_padding(6, 6);
+        self.info_dialog.get_content_area().pack_start(self.past_twilight_label, True, True, 0)
+        self.past_twilight_label.show()
+
+        self.future_twilight_label = Gtk.Label()
+        self.future_twilight_label.set_alignment(0.0, 0.5)
+        self.future_twilight_label.set_padding(6, 6);
+        self.info_dialog.get_content_area().pack_start(self.future_twilight_label, True, True, 0)
+        self.future_twilight_label.show()
 
         self.info_dialog.connect('response', self.response_info_cb)
 
@@ -269,6 +298,54 @@ class RedshiftStatusIcon(object):
         self._location = location
         self.location_label.set_markup('<b>{}:</b> {}, {}'.format(_('Location'), *location))
 
+    def change_previous_sunrise(self, key, value):
+        self._previous_sunrise = (key, value)
+        if 'sunrise' in key:
+            title = _('Previous sunrise')
+        else:
+            title = _('Previous sunset')
+        if value == 'never':
+            when = _('never')
+        else:
+            when = str(datetime.datetime.fromtimestamp(int(value)))
+        self.previous_sunrise_label.set_markup('<b>{}:</b> {}'.format(title, when))
+
+    def change_next_sunrise(self, key, value):
+        self._next_sunrise = (key, value)
+        if 'sunrise' in key:
+            title = _('Next sunrise')
+        else:
+            title = _('Next sunset')
+        if value == 'never':
+            when = _('never')
+        else:
+            when = str(datetime.datetime.fromtimestamp(int(value)))
+        self.next_sunrise_label.set_markup('<b>{}:</b> {}'.format(title, when))
+
+    def change_past_twilight(self, key, value):
+        self._past_twilight = (key, value)
+        if 'ended' in key:
+            title = _('Twilight ended')
+        else:
+            title = _('Twilight started')
+        if value == 'never':
+            when = _('never')
+        else:
+            when = str(datetime.datetime.fromtimestamp(int(value)))
+        self.past_twilight_label.set_markup('<b>{}:</b> {}'.format(title, when))
+
+    def change_future_twilight(self, key, value):
+        self._future_twilight = (key, value)
+        if 'ends' in key:
+            title = _('Twilight ends')
+        else:
+            title = _('Twilight starts')
+        if value == 'never':
+            when = _('never')
+        else:
+            when = str(datetime.datetime.fromtimestamp(int(value)))
+        self.future_twilight_label.set_markup('<b>{}:</b> {}'.format(title, when))
+
 
     def is_enabled(self):
         return self._status
@@ -297,6 +374,14 @@ class RedshiftStatusIcon(object):
             self.change_period(value)
         elif key == 'Location':
             self.change_location(tuple(float(x) for x in value.split(', ')))
+        elif key in ('Previous sunrise', 'Previous sunset'):
+            self.change_previous_sunrise(key, value)
+        elif key in ('Next sunrise', 'Next sunset'):
+            self.change_next_sunrise(key, value)
+        elif key in ('Twilight ended', 'Twilight started'):
+            self.change_past_twilight(key, value)
+        elif key in ('Twilight ends', 'Twilight starts'):
+            self.change_future_twilight(key, value)
 
     def child_stdout_line_cb(self, line):
         if line:
