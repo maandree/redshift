@@ -44,6 +44,7 @@
 #endif
 
 #include "redshift.h"
+#include "settings.h"
 #include "config-ini.h"
 #include "solar.h"
 #include "systemtime.h"
@@ -159,20 +160,12 @@ static const location_provider_t location_providers[] = {
 	{ NULL }
 };
 
-/* Program modes. */
-typedef enum {
-	PROGRAM_MODE_CONTINUAL,
-	PROGRAM_MODE_ONE_SHOT,
-	PROGRAM_MODE_PRINT,
-	PROGRAM_MODE_RESET,
-	PROGRAM_MODE_MANUAL
-} program_mode_t;
-
 
 #if defined(HAVE_SIGNAL_H) && !defined(__WIN32__)
 
 static volatile sig_atomic_t exiting = 0;
 static volatile sig_atomic_t disable = 0;
+static volatile sig_atomic_t reload = 0;
 
 /* Signal handler for exit signals */
 static void
@@ -188,27 +181,33 @@ sigdisable(int signo)
 	disable = 1;
 }
 
+/* Signal handler for reload signal */
+static void
+sigreload(int signo)
+{
+	reload = 1;
+}
+
 #else /* ! HAVE_SIGNAL_H || __WIN32__ */
 
 static int exiting = 0;
 static int disable = 0;
+static int reload = 0;
 
 #endif /* ! HAVE_SIGNAL_H || __WIN32__ */
 
-/* Transition settings. */
-static float transition_low = TRANSITION_LOW;
-static float transition_high = TRANSITION_HIGH;
+static settings_t settings;
 
 
 /* Print which period (night, day or transition) we're currently in. */
 static void
 print_period(double elevation)
 {
-	if (elevation < transition_low) {
+	if (elevation < settings.transition_low) {
 		printf(_("Period: Night\n"));
-	} else if (elevation < transition_high) {
-		float a = (transition_low - elevation) /
-			(transition_low - transition_high);
+	} else if (elevation < settings.transition_high) {
+		float a = (settings.transition_low - elevation) /
+			(settings.transition_low - settings.transition_high);
 		printf(_("Period: Transition (%.2f%% day)\n"), a*100);
 	} else {
 		printf(_("Period: Daytime\n"));
@@ -220,12 +219,12 @@ static float
 calculate_interpolated_value(double elevation, float day, float night)
 {
 	float result;
-	if (elevation < transition_low) {
+	if (elevation < settings.transition_low) {
 		result = night;
-	} else if (elevation < transition_high) {
+	} else if (elevation < settings.transition_high) {
 		/* Transition period: interpolate */
-		float a = (transition_low - elevation) /
-			(transition_low - transition_high);
+		float a = (settings.transition_low - elevation) /
+			(settings.transition_low - settings.transition_high);
 		result = (1.0-a)*night + a*day;
 	} else {
 		result = day;
@@ -431,7 +430,7 @@ static int
 method_try_start(const gamma_method_t *method,
 		 gamma_server_state_t *state,
 		 config_ini_state_t *config, char *args,
-		 char *gamma, int preserve_calibrations)
+		 char *gamma)
 {
 	int r;
 
@@ -455,7 +454,7 @@ method_try_start(const gamma_method_t *method,
 
 	/* Set default preserve-calibrations settings. */
 	char preserve_calibrations_value[2];
-	snprintf(preserve_calibrations_value, 2, preserve_calibrations ? "1" : "0");
+	snprintf(preserve_calibrations_value, 2, settings.preserve_calibrations ? "1" : "0");
 	r = gamma_set_option(state, "preserve-calibrations", preserve_calibrations_value, 0);
 	if (r < 0) {
 		gamma_free(state);
@@ -607,10 +606,10 @@ print_twilight_period(double now, double lat, double lon, double elevation)
 	double next_low, next_high, prev_low, prev_high;
 	double next_sunset_sunset, prev_sunset_sunset;
 
-	next_low  = future_elevation(now, lat, lon, transition_low);
-	next_high = future_elevation(now, lat, lon, transition_high);
-	prev_low  =   past_elevation(now, lat, lon, transition_low);
-	prev_high =   past_elevation(now, lat, lon, transition_high);
+	next_low  = future_elevation(now, lat, lon, settings.transition_low);
+	next_high = future_elevation(now, lat, lon, settings.transition_high);
+	prev_low  =   past_elevation(now, lat, lon, settings.transition_low);
+	prev_high =   past_elevation(now, lat, lon, settings.transition_high);
 	next_sunset_sunset = future_elevation(now, lat, lon, 0.0);
 	prev_sunset_sunset =   past_elevation(now, lat, lon, 0.0);
 
@@ -620,10 +619,10 @@ print_twilight_period(double now, double lat, double lon, double elevation)
 	if (elevation > 0.0)  twilight_print(_("Next sunset"),  next_sunset_sunset);
 	else                  twilight_print(_("Next sunrise"), next_sunset_sunset);
 
-	if (elevation >= transition_high) {
+	if (elevation >= settings.transition_high) {
 		twilight_print(_("Twilight ended"),  prev_high);
 		twilight_print(_("Twilight starts"), next_high);
-	} else if (elevation >= transition_low) {
+	} else if (elevation >= settings.transition_low) {
 		twilight_print(_("Twilight ended"),  prev_low);
 		twilight_print(_("Twilight starts"), next_low);
 	} else {
@@ -655,12 +654,9 @@ main(int argc, char *argv[])
 	/* Initialize settings to NULL values. */
 	char *config_filepath = NULL;
 
-	int temp_set = -1;
-	int temp_day = -1;
-	int temp_night = -1;
 	char *gamma = NULL;
-	float brightness_day = NAN;
-	float brightness_night = NAN;
+	settings_t settings_cmdline;
+	settings_init(&settings);
 
 	const gamma_method_t *method = NULL;
 	char *method_args = NULL;
@@ -668,8 +664,6 @@ main(int argc, char *argv[])
 	const location_provider_t *provider = NULL;
 	char *provider_args = NULL;
 
-	int preserve_calibrations = -1;
-	int transition = -1;
 	program_mode_t mode = PROGRAM_MODE_CONTINUAL;
 	int verbose = 0;
 	char *s;
@@ -688,7 +682,8 @@ main(int argc, char *argv[])
 		float gamma_[3];
 		switch (opt) {
 		case 'b':
-			parse_brightness_string(optarg, &brightness_day, &brightness_night);
+			parse_brightness_string(optarg, &(settings.brightness_day),
+						&(settings.brightness_night));
 			break;
 		case 'c':
 			if (config_filepath != NULL) free(config_filepath);
@@ -808,16 +803,16 @@ main(int argc, char *argv[])
 			break;
 		case 'O':
 			mode = PROGRAM_MODE_MANUAL;
-			temp_set = atoi(optarg);
+			settings.temp_set = atoi(optarg);
 			break;
 		case 'p':
 			mode = PROGRAM_MODE_PRINT;
 			break;
 		case 'P':
-			preserve_calibrations = 1;
+			settings.preserve_calibrations = 1;
 			break;
 		case 'r':
-			transition = 0;
+			settings.transition = 0;
 			break;
 		case 't':
 			s = strchr(optarg, ':');
@@ -829,8 +824,8 @@ main(int argc, char *argv[])
 				exit(EXIT_FAILURE);
 			}
 			*(s++) = '\0';
-			temp_day = atoi(optarg);
-			temp_night = atoi(s);
+			settings.temp_day = atoi(optarg);
+			settings.temp_night = atoi(s);
 			break;
 		case 'v':
 			verbose = 1;
@@ -849,6 +844,8 @@ main(int argc, char *argv[])
 		}
 	}
 
+	settings_copy(&settings_cmdline, &settings);
+
 	/* Load settings from config file. */
 	config_ini_state_t config_state;
 	r = config_ini_init(&config_state, config_filepath);
@@ -857,59 +854,18 @@ main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	if (config_filepath != NULL) free(config_filepath);
-
 	/* Read global config settings. */
 	config_ini_section_t *section = config_ini_get_section(&config_state,
 							       "redshift");
 	if (section != NULL) {
 		config_ini_setting_t *setting = section->settings;
 		while (setting != NULL) {
-			if (strcasecmp(setting->name, "temp-day") == 0) {
-				if (temp_day < 0) {
-					temp_day = atoi(setting->value);
-				}
-			} else if (strcasecmp(setting->name,
-					      "temp-night") == 0) {
-				if (temp_night < 0) {
-					temp_night = atoi(setting->value);
-				}
-			} else if (strcasecmp(setting->name,
-					      "preserve-calibrations") == 0) {
-				if (preserve_calibrations < 0 &&
-				    mode == PROGRAM_MODE_CONTINUAL) {
-					preserve_calibrations = !!atoi(setting->value);
-				}
-			} else if (strcasecmp(setting->name,
-					      "transition") == 0) {
-				if (transition < 0) {
-					transition = !!atoi(setting->value);
-				}
-			} else if (strcasecmp(setting->name,
-					      "brightness") == 0) {
-				if (isnan(brightness_day)) {
-					brightness_day = atof(setting->value);
-				}
-				if (isnan(brightness_night)) {
-					brightness_night = atof(setting->value);
-				}
-			} else if (strcasecmp(setting->name,
-					      "brightness-day") == 0) {
-				if (isnan(brightness_day)) {
-					brightness_day = atof(setting->value);
-				}
-			} else if (strcasecmp(setting->name,
-					      "brightness-night") == 0) {
-				if (isnan(brightness_night)) {
-					brightness_night = atof(setting->value);
-				}
-			} else if (strcasecmp(setting->name,
-					      "elevation-high") == 0) {
-				transition_high = atof(setting->value);
-			} else if (strcasecmp(setting->name,
-					      "elevation-low") == 0) {
-				transition_low = atof(setting->value);
-			} else if (strcasecmp(setting->name, "gamma") == 0) {
+			r = settings_parse(&settings, setting->name, setting->value, mode);
+			if (r == 0)
+				;
+			else if (r < 0)
+				exit(EXIT_FAILURE);
+			else if (strcasecmp(setting->name, "gamma") == 0) {
 				if (gamma == NULL) {
 					gamma = strdup(setting->value);
 					if (gamma == NULL) {
@@ -979,12 +935,7 @@ main(int argc, char *argv[])
 
 	/* Use default values for settings that were neither defined in
 	   the config file nor on the command line. */
-	if (temp_day < 0) temp_day = DEFAULT_DAY_TEMP;
-	if (temp_night < 0) temp_night = DEFAULT_NIGHT_TEMP;
-	if (isnan(brightness_day)) brightness_day = DEFAULT_BRIGHTNESS;
-	if (isnan(brightness_night)) brightness_night = DEFAULT_BRIGHTNESS;
-	if (transition < 0) transition = 1;
-	if (preserve_calibrations < 0) preserve_calibrations = 0;
+	settings_finalize(&settings);
 
 	float lat = NAN;
 	float lon = NAN;
@@ -1050,10 +1001,10 @@ main(int argc, char *argv[])
 			       fabs(lat), lat >= 0.f ? _("N") : _("S"),
 			       fabs(lon), lon >= 0.f ? _("E") : _("W"));
 			printf(_("Temperatures: %dK at day, %dK at night\n"),
-			       temp_day, temp_night);
+			       settings.temp_day, settings.temp_night);
 		        /* TRANSLATORS: Append degree symbols if possible. */
 			printf(_("Solar elevations: day above %.1f, night below %.1f\n"),
-			       transition_high, transition_low);
+			       settings.transition_high, settings.transition_low);
 		}
 
 		/* Latitude */
@@ -1073,55 +1024,15 @@ main(int argc, char *argv[])
 		                  " %.1f and %.1f.\n"), MIN_LON, MAX_LON);
 		        exit(EXIT_FAILURE);
 		}
-
-		/* Color temperature at daytime */
-		if (temp_day < MIN_TEMP || temp_day > MAX_TEMP) {
-			fprintf(stderr,
-				_("Temperature must be between %uK and %uK.\n"),
-				MIN_TEMP, MAX_TEMP);
-			exit(EXIT_FAILURE);
-		}
-	
-		/* Color temperature at night */
-		if (temp_night < MIN_TEMP || temp_night > MAX_TEMP) {
-			fprintf(stderr,
-				_("Temperature must be between %uK and %uK.\n"),
-				MIN_TEMP, MAX_TEMP);
-			exit(EXIT_FAILURE);
-		}
-
-		/* Solar elevations */
-		if (transition_high < transition_low) {
-		        fprintf(stderr,
-		                _("High transition elevation cannot be lower than"
-				  " the low transition elevation.\n"));
-		        exit(EXIT_FAILURE);
-		}
 	}
 
-	if (mode == PROGRAM_MODE_MANUAL) {
-		/* Check color temperature to be set */
-		if (temp_set < MIN_TEMP || temp_set > MAX_TEMP) {
-			fprintf(stderr,
-				_("Temperature must be between %uK and %uK.\n"),
-				MIN_TEMP, MAX_TEMP);
-			exit(EXIT_FAILURE);
-		}
-	}
-
-	/* Brightness */
-	if (brightness_day < MIN_BRIGHTNESS ||
-	    brightness_day > MAX_BRIGHTNESS ||
-	    brightness_night < MIN_BRIGHTNESS ||
-	    brightness_night > MAX_BRIGHTNESS) {
-		fprintf(stderr,
-			_("Brightness values must be between %.1f and %.1f.\n"),
-			MIN_BRIGHTNESS, MAX_BRIGHTNESS);
+	r = settings_validate(&settings, mode == PROGRAM_MODE_MANUAL, mode == PROGRAM_MODE_RESET);
+	if (r < 0)
 		exit(EXIT_FAILURE);
-	}
 
 	if (verbose) {
-		printf(_("Brightness: %.2f:%.2f\n"), brightness_day, brightness_night);
+		printf(_("Brightness: %.2f:%.2f\n"),
+		       settings.brightness_day, settings.brightness_night);
 	}
 
 	/* Initialize gamma adjustment method. If method is NULL
@@ -1135,7 +1046,7 @@ main(int argc, char *argv[])
 			r = method_try_start(method, &state, &config_state,
 					     method_args == NULL ? NULL :
 					     method_args + strlen(method_args) + 1,
-					     gamma, preserve_calibrations);
+					     gamma);
 			if (r < 0) {
 				config_ini_free(&config_state);
 				exit(EXIT_FAILURE);
@@ -1147,8 +1058,7 @@ main(int argc, char *argv[])
 				if (!m->autostart_test())
 					continue;
 
-				r = method_try_start(m, &state, &config_state, NULL,
-						     gamma, preserve_calibrations);
+				r = method_try_start(m, &state, &config_state, NULL, gamma);
 				if (r < 0) {
 					fputs(_("Trying next method...\n"), stderr);
 					continue;
@@ -1196,9 +1106,10 @@ main(int argc, char *argv[])
 
 		/* Use elevation of sun to set color temperature */
 		int temp = (int)calculate_interpolated_value(elevation,
-							     temp_day, temp_night);
+							     settings.temp_day, settings.temp_night);
 		float brightness = calculate_interpolated_value(elevation,
-								brightness_day, brightness_night);
+								settings.brightness_day,
+								settings.brightness_night);
 
 		if (verbose || mode == PROGRAM_MODE_PRINT) {
 			print_period(elevation);
@@ -1225,10 +1136,10 @@ main(int argc, char *argv[])
 	break;
 	case PROGRAM_MODE_MANUAL:
 	{
-		if (verbose) printf(_("Color temperature: %uK\n"), temp_set);
+		if (verbose) printf(_("Color temperature: %uK\n"), settings.temp_set);
 
 		/* Adjust temperature */
-		r = set_temperature(&state, temp_set, brightness_day);
+		r = set_temperature(&state, settings.temp_set, settings.brightness_day);
 		if (r < 0) {
 			fputs(_("Temperature adjustment failed.\n"), stderr);
 			gamma_free(&state);
@@ -1278,6 +1189,12 @@ main(int argc, char *argv[])
 		sigact.sa_mask = sigset;
 		sigact.sa_flags = 0;
 		sigaction(SIGUSR1, &sigact, NULL);
+
+		/* Install signal handler for USR2 singal */
+		sigact.sa_handler = sigreload;
+		sigact.sa_mask = sigset;
+		sigact.sa_flags = 0;
+		sigaction(SIGUSR2, &sigact, NULL);
 #endif /* HAVE_SIGNAL_H && ! __WIN32__ */
 
 		if (verbose) {
@@ -1291,7 +1208,76 @@ main(int argc, char *argv[])
 		/* Continuously adjust color temperature */
 		int done = 0;
 		int disabled = 0;
+		settings_t old_settings;
+		settings_t new_settings;
+		double reload_trans_delta = 0.2;
+		double reload_trans = 0;
+		int reloading = 0;
+		
 		while (1) {
+			/* Reload settings if reload signal was caught */
+			if (reload) {
+				reload = 0;
+				settings_copy(&new_settings, &settings_cmdline);
+
+				/* Load settings from config file. */
+				config_ini_state_t config_state;
+				r = config_ini_init(&config_state, config_filepath);
+				if (r < 0) {
+					fputs("Unable to load config file.\n", stderr);
+					goto reload_failed;
+				}
+
+				/* Read global config settings. */
+				config_ini_section_t *section =
+					config_ini_get_section(&config_state, "redshift");
+				if (section != NULL) {
+					config_ini_setting_t *setting = section->settings;
+					while (setting != NULL) {
+						r = settings_parse(&new_settings, setting->name, setting->value, mode);
+						if (r < 0) {
+							config_ini_free(&config_state);
+							goto reload_failed;
+						}
+						setting = setting->next;
+					}
+				}
+
+				config_ini_free(&config_state);
+				settings_finalize(&new_settings);
+				r = settings_validate(&new_settings, 0, 0);
+				if (r < 0) goto reload_failed;
+				
+				if (new_settings.reload_transition) {
+					settings_copy(&old_settings, &settings);
+					reloading = 1;
+					reload_trans = 0;
+				} else {
+					settings_copy(&settings, &new_settings);
+				}
+				
+				if (verbose) {
+				        /* TRANSLATORS: Append degree symbols if possible. */
+				        printf(_("Location: %f, %f\n"), lat, lon);
+					printf(_("Temperatures: %dK at day, %dK at night\n"),
+					       settings.temp_day, settings.temp_night);
+				        /* TRANSLATORS: Append degree symbols if possible. */
+					printf(_("Solar elevations: day above %.1f, night below %.1f\n"),
+					       settings.transition_high, settings.transition_low);
+					printf(_("Brightness: %.2f:%.2f\n"),
+					       settings.brightness_day, settings.brightness_night);
+				}
+			}
+		reload_failed:
+
+			/* Perform reload transition */
+			if (reloading) {
+				reload_trans += reload_trans_delta;
+				if (reload_trans >= 1.0)
+					reloading = 0;
+				settings_interpolate(&settings, old_settings, new_settings, reload_trans);
+			}
+
 			/* Check to see if disable signal was caught */
 			if (disable) {
 				short_trans_len = 2;
@@ -1343,7 +1329,7 @@ main(int argc, char *argv[])
 
 			/* Skip over transition if transitions are disabled */
 			int set_adjustments = 0;
-			if (!transition) {
+			if (!settings.transition) {
 				if (short_trans_delta) {
 					adjustment_alpha = short_trans_delta < 0 ? 0.0 : 1.0;
 					short_trans_delta = 0;
@@ -1356,9 +1342,10 @@ main(int argc, char *argv[])
 
 			/* Use elevation of sun to set color temperature */
 			int temp = (int)calculate_interpolated_value(elevation,
-								temp_day, temp_night);
+								settings.temp_day, settings.temp_night);
 			float brightness = calculate_interpolated_value(elevation,
-								brightness_day, brightness_night);
+									settings.brightness_day,
+									settings.brightness_night);
 
 			if (verbose) print_period(elevation);
 
@@ -1406,9 +1393,9 @@ main(int argc, char *argv[])
 				}
 
 				int new_hook_event = HOOK_TWILIGHT;
-				if (elevation >= transition_high)
+				if (elevation >= settings.transition_high)
 					new_hook_event = HOOK_DAY;
-				else if (elevation <= transition_low)
+				else if (elevation <= settings.transition_low)
 					new_hook_event = HOOK_NIGHT;
 				if (hook_event != new_hook_event) {
 					hook_event = new_hook_event;
@@ -1421,10 +1408,10 @@ main(int argc, char *argv[])
 
 			/* Sleep for 5 seconds or 0.1 second. */
 #ifndef _WIN32
-			if (short_trans_delta) usleep(100000);
+			if (short_trans_delta || reloading) usleep(100000);
 			else usleep(5000000);
 #else /* ! _WIN32 */
-			if (short_trans_delta) Sleep(100);
+			if (short_trans_delta || reloading) Sleep(100);
 			else Sleep(5000);
 #endif /* ! _WIN32 */
 		}
@@ -1449,5 +1436,7 @@ main(int argc, char *argv[])
 		free(provider_args);
 
 	free_hooks();
+	
+	if (config_filepath != NULL) free(config_filepath);
 	return EXIT_SUCCESS;
 }

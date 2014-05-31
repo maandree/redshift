@@ -21,6 +21,8 @@
 #ifndef REDSHIFT_REDSHIFT_H
 #define REDSHIFT_REDSHIFT_H
 
+#include "solar.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -41,6 +43,16 @@
 #ifndef TRANSITION_HIGH
 #  define TRANSITION_HIGH    3.0
 #endif
+
+
+/* Program modes. */
+typedef enum {
+	PROGRAM_MODE_CONTINUAL,
+	PROGRAM_MODE_ONE_SHOT,
+	PROGRAM_MODE_PRINT,
+	PROGRAM_MODE_RESET,
+	PROGRAM_MODE_MANUAL
+} program_mode_t;
 
 
 /* Gamma adjustment method */
