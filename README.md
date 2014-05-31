@@ -153,6 +153,7 @@ dialogue in redshift-gtk:
 * Time of the next sunrise/sunset
 * The time twilight (the transition period) started/ended
 * The time twilight starts/ends
+
 The time points are calculated an interative method and it will
 say that the will never occur / has never occurred if no satisfying
 point in time can be found within the span of one year.
