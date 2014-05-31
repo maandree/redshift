@@ -48,4 +48,8 @@ typedef enum {
 double solar_elevation(double date, double lat, double lon);
 void solar_table_fill(double date, double lat, double lon, double *table);
 
+double future_elevation(double date, double lat, double lon, double elevation);
+double past_elevation(double date, double lat, double lon, double elevation);
+
+
 #endif /* ! REDSHIFT_SOLAR_H */
