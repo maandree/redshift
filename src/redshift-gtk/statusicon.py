@@ -80,6 +80,7 @@ class RedshiftStatusIcon(object):
 
         # Install relay signal handlers
         signal.signal(signal.SIGUSR1, relay_signal_handler)
+        signal.signal(signal.SIGUSR2, relay_signal_handler)
 
         if appindicator:
             # Create indicator
