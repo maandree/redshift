@@ -146,3 +146,14 @@ at full night solar elevation. `twilight` hooks will be
 executed when `redshift` enters or starts at a transtition
 period between daytime and night.
 
+### Display sunrise/sunset information in redshift-gtk
+The following information has been added to the info
+dialogue in redshift-gtk:
+* Time of the previous sunrise/sunset
+* Time of the next sunrise/sunset
+* The time twilight (the transition period) started/ended
+* The time twilight starts/ends
+The time points are calculated an interative method and it will
+say that the will never occur / has never occurred if no satisfying
+point in time can be found within the span of one year.
+
