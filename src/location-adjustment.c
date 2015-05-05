@@ -4,6 +4,65 @@
 #include "location-adjustment.h"
 #include <string.h>
 
+/* Location provider method structs */
+static const location_provider_t location_providers[] = {
+#ifdef ENABLE_GEOCLUE
+	{
+		"geoclue",
+		(location_provider_init_func *)location_geoclue_init,
+		(location_provider_start_func *)location_geoclue_start,
+		(location_provider_free_func *)location_geoclue_free,
+		(location_provider_print_help_func *)
+		location_geoclue_print_help,
+		(location_provider_set_option_func *)
+		location_geoclue_set_option,
+		(location_provider_get_location_func *)
+		location_geoclue_get_location
+	},
+#endif
+#ifdef ENABLE_GEOCLUE2
+	{
+		"geoclue2",
+		(location_provider_init_func *)location_geoclue2_init,
+		(location_provider_start_func *)location_geoclue2_start,
+		(location_provider_free_func *)location_geoclue2_free,
+		(location_provider_print_help_func *)
+		location_geoclue2_print_help,
+		(location_provider_set_option_func *)
+		location_geoclue2_set_option,
+		(location_provider_get_location_func *)
+		location_geoclue2_get_location
+	},
+#endif
+#ifdef ENABLE_CORELOCATION
+	{
+		"corelocation",
+		(location_provider_init_func *)location_corelocation_init,
+		(location_provider_start_func *)location_corelocation_start,
+		(location_provider_free_func *)location_corelocation_free,
+		(location_provider_print_help_func *)
+		location_corelocation_print_help,
+		(location_provider_set_option_func *)
+		location_corelocation_set_option,
+		(location_provider_get_location_func *)
+		location_corelocation_get_location
+	},
+#endif
+	{
+		"manual",
+		(location_provider_init_func *)location_manual_init,
+		(location_provider_start_func *)location_manual_start,
+		(location_provider_free_func *)location_manual_free,
+		(location_provider_print_help_func *)
+		location_manual_print_help,
+		(location_provider_set_option_func *)
+		location_manual_set_option,
+		(location_provider_get_location_func *)
+		location_manual_get_location
+	},
+	{ NULL }
+};
+
 void
 print_provider_list()
 {
@@ -127,18 +186,20 @@ provider_try_start(const location_provider_t *provider,
 }
 
 const location_provider_t *get_first_valid_provider(location_state_t *location_state, config_ini_state_t *config) {
-    const location_provider_t *provider; 
+    const location_provider_t *provider, *p;
+    provider=NULL;
     int r, i;
     for (i = 0; location_providers[i].name != NULL; i++) {
-        provider = &location_providers[i];
-        fprintf(stderr, _("Trying location provider `%s'...\n"), provider->name);
-        r = provider_try_start(provider, location_state, config, NULL);
+        p = &location_providers[i];
+        fprintf(stderr, _("Trying location provider `%s'...\n"), p->name);
+        r = provider_try_start(p, location_state, config, NULL);
         if (r < 0) {
             fputs(_("Trying next provider...\n"), stderr);
             continue;
         }
 
         /* Found provider that works. */
+        provider=p;
         printf(_("Using provider `%s'.\n"), provider->name);
         break;
     }
