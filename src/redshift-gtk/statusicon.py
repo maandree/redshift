@@ -15,6 +15,7 @@
 # along with Redshift.  If not, see <http://www.gnu.org/licenses/>.
 
 # Copyright (c) 2013-2014  Jon Lund Steffensen <jonlst@gmail.com>
+# Copyright (c) 2014  Mattias Andrée <maandree@member.fsf.org>
 
 
 '''GUI status icon for Redshift.
@@ -103,13 +104,15 @@ class RedshiftController(GObject.GObject):
             GLib.io_add_watch(self._process[3], GLib.PRIORITY_DEFAULT, GLib.IO_IN,
                               self._child_data_cb, (False, self._error_buffer))
 
-            # Signal handler to relay USR1 signal to redshift process
+            # Signal handler to relay USR1 and USR2 signals to redshift process
             def relay_signal_handler(signal):
                 os.kill(self._process[0], signal)
                 return True
 
             GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, signal.SIGUSR1,
                                  relay_signal_handler, signal.SIGUSR1)
+            GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, signal.SIGUSR2,
+                                 relay_signal_handler, signal.SIGUSR2)
         except:
             self.termwait()
             raise
@@ -142,6 +145,10 @@ class RedshiftController(GObject.GObject):
     def _child_toggle_inhibit(self):
         '''Sends a request to the child process to toggle state'''
         os.kill(self._process[0], signal.SIGUSR1)
+
+    def reload(self):
+        '''Sends a request to the child process to reload settings'''
+        os.kill(self._process[0], signal.SIGUSR2)
 
     def _child_cb(self, pid, status, data=None):
         '''Called when the child process exists'''
@@ -273,6 +280,11 @@ class RedshiftStatusIcon(object):
         suspend_menu_item.set_submenu(suspend_menu)
         self.status_menu.append(suspend_menu_item)
 
+        # Add reload action
+        self.reload_item = Gtk.MenuItem.new_with_label(_('Reload settings'))
+        self.reload_item.connect('activate', self.reload_item_cb)
+        self.status_menu.append(self.reload_item)
+
         # Add autostart option
         autostart_item = Gtk.CheckMenuItem.new_with_label(_('Autostart'))
         try:
@@ -403,6 +415,10 @@ class RedshiftStatusIcon(object):
         if active != widget.get_active():
             self.remove_suspend_timer()
             self._controller.set_inhibit(not self._controller.inhibited)
+
+    def reload_item_cb(self, widget, data=None):
+        '''Callback when a request to reload redshift was made'''
+        self._controller.reload()
 
     # Info dialog callbacks
     def show_info_cb(self, widget, data=None):
