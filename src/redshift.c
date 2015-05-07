@@ -15,6 +15,7 @@
    along with Redshift.  If not, see <http://www.gnu.org/licenses/>.
 
    Copyright (c) 2009-2015  Jon Lund Steffensen <jonlst@gmail.com>
+   Copyright (c) 2014  Mattias Andrée <maandree@member.fsf.org>
 */
 
 #ifdef HAVE_CONFIG_H
@@ -327,6 +328,7 @@ static const char *period_names[] = {
 
 static volatile sig_atomic_t exiting = 0;
 static volatile sig_atomic_t disable = 0;
+static volatile sig_atomic_t reload = 0;
 
 /* Signal handler for exit signals */
 static void
@@ -342,10 +344,18 @@ sigdisable(int signo)
 	disable = 1;
 }
 
+/* Signal handler for reload signal */
+static void
+sigreload(int signo)
+{
+	reload = 1;
+}
+
 #else /* ! HAVE_SIGNAL_H || __WIN32__ */
 
 static int exiting = 0;
 static int disable = 0;
+static int reload = 0;
 
 #endif /* ! HAVE_SIGNAL_H || __WIN32__ */
 
@@ -849,6 +859,17 @@ run_continual_mode(const location_t *loc,
 	sigact.sa_flags = 0;
 
 	r = sigaction(SIGUSR1, &sigact, NULL);
+	if (r < 0) {
+		perror("sigaction");
+		return -1;
+	}
+
+	/* Install signal handler for USRR signal */
+	sigact.sa_handler = sigreload;
+	sigact.sa_mask = sigset;
+	sigact.sa_flags = 0;
+
+	r = sigaction(SIGUSR2, &sigact, NULL);
 	if (r < 0) {
 		perror("sigaction");
 		return -1;
