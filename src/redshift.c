@@ -865,7 +865,7 @@ run_continual_mode(const location_t *loc,
 		return -1;
 	}
 
-	/* Install signal handler for USRR signal */
+	/* Install signal handler for USR2 signal */
 	sigact.sa_handler = sigreload;
 	sigact.sa_mask = sigset;
 	sigact.sa_flags = 0;
