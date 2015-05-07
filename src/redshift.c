@@ -74,21 +74,6 @@
 #endif
 
 
-#include "location-manual.h"
-
-#ifdef ENABLE_GEOCLUE
-# include "location-geoclue.h"
-#endif
-
-#ifdef ENABLE_GEOCLUE2
-# include "location-geoclue2.h"
-#endif
-
-#ifdef ENABLE_CORELOCATION
-# include "location-corelocation.h"
-#endif
-
-
 /* Union of state data for gamma adjustment methods */
 typedef union {
 #ifdef ENABLE_DRM
