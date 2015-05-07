@@ -758,13 +758,18 @@ parse_brightness_string(const char *str, float *bright_day, float *bright_night)
 static int
 gamma_is_valid(const float gamma[3])
 {
+#ifdef MAX_GAMMA
 	return !(gamma[0] < MIN_GAMMA ||
 		 gamma[0] > MAX_GAMMA ||
 		 gamma[1] < MIN_GAMMA ||
 		 gamma[1] > MAX_GAMMA ||
 		 gamma[2] < MIN_GAMMA ||
 		 gamma[2] > MAX_GAMMA);
-
+#else
+	return !(gamma[0] < MIN_GAMMA ||
+		 gamma[1] < MIN_GAMMA ||
+		 gamma[2] < MIN_GAMMA);
+#endif
 }
 
 static const gamma_method_t *
@@ -1515,6 +1520,7 @@ main(int argc, char *argv[])
 	}
 
 	/* Brightness */
+#ifdef MAX_BRIGHTNESS
 	if (scheme.day.brightness < MIN_BRIGHTNESS ||
 	    scheme.day.brightness > MAX_BRIGHTNESS ||
 	    scheme.night.brightness < MIN_BRIGHTNESS ||
@@ -1524,6 +1530,15 @@ main(int argc, char *argv[])
 			MIN_BRIGHTNESS, MAX_BRIGHTNESS);
 		exit(EXIT_FAILURE);
 	}
+#else
+	if (scheme.day.brightness < MIN_BRIGHTNESS ||
+	    scheme.night.brightness < MIN_BRIGHTNESS) {
+		fprintf(stderr,
+			_("Brightness values must be %.1f or higher.\n"),
+			MIN_BRIGHTNESS);
+		exit(EXIT_FAILURE);
+	}
+#endif
 
 	if (verbose) {
 		printf(_("Brightness: %.2f:%.2f\n"),
@@ -1533,9 +1548,15 @@ main(int argc, char *argv[])
 	/* Gamma */
 	if (!gamma_is_valid(scheme.day.gamma) ||
 	    !gamma_is_valid(scheme.night.gamma)) {
+#ifdef MAX_GAMMA
 		fprintf(stderr,
 			_("Gamma value must be between %.1f and %.1f.\n"),
 			MIN_GAMMA, MAX_GAMMA);
+#else
+		fprintf(stderr,
+			_("Gamma value must be %.1f or higher.\n"),
+			MIN_GAMMA);
+#endif
 		exit(EXIT_FAILURE);
 	}
 
