@@ -300,7 +300,8 @@ typedef enum {
 	PROGRAM_MODE_ONE_SHOT,
 	PROGRAM_MODE_PRINT,
 	PROGRAM_MODE_RESET,
-	PROGRAM_MODE_MANUAL
+	PROGRAM_MODE_MANUAL,
+	PROGRAM_MODE_RELOAD
 } program_mode_t;
 
 /* Transition scheme.
@@ -1088,7 +1089,7 @@ main(int argc, char *argv[])
 
 	/* Parse command line arguments. */
 	int opt;
-	while ((opt = getopt(argc, argv, "b:c:g:hl:m:oO:prt:vVx")) != -1) {
+	while ((opt = getopt(argc, argv, "b:c:g:hl:m:oO:prRt:vVx")) != -1) {
 		switch (opt) {
 		case 'b':
 			parse_brightness_string(optarg,
@@ -1207,6 +1208,9 @@ main(int argc, char *argv[])
 		case 'r':
 			transition = 0;
 			break;
+		case 'R':
+			mode = PROGRAM_MODE_RELOAD;
+			break;
 		case 't':
 			s = strchr(optarg, ':');
 			if (s == NULL) {
@@ -1235,6 +1239,16 @@ main(int argc, char *argv[])
 			exit(EXIT_FAILURE);
 			break;
 		}
+	}
+
+	/* Reload settings in running instances of Redshift. */
+	if (mode == PROGRAM_MODE_RELOAD) {
+		char user[3 * sizeof(uid_t) + 1];
+		uid_t uid = getuid();
+		sprintf(user, "%ji", (intmax_t)uid);
+		execlp("pkill", "pkill", "-USR2", "-u", user, "^redshift$", NULL);
+		perror("execlp");
+		exit(EXIT_FAILURE);
 	}
 
 	/* Load settings from config file. */
